@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Upload Form</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h2>C2E Information</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" class="form-control" id="title" name="c2e[title]" required>
+      </div>
+      <div class="form-group">
+        <label for="description">Description:</label>
+        <textarea class="form-control" id="description" name="c2e[description]" rows="4" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="file">Choose File:</label>
+        <input type="file" class="form-control-file" id="file" name="file" required>
+      </div>
+
+      <h2>C2E Licensee Information</h2>
+      <!-- name, email and url input fields for licensee  -->
+      <div class="form-group">
+        <label for="licensee_name">Name:</label>
+        <input type="text" class="form-control" id="licensee_name" name="licensee[name]" required>
+      </div>
+      <div class="form-group">
+        <label for="licensee_email">Email:</label>
+        <input type="email" class="form-control" id="licensee_email" name="licensee[email]" required>
+      </div>
+      <div class="form-group">
+        <label for="licensee_url">URL:</label>
+        <input type="url" class="form-control" id="licensee_url" name="licensee[url]" required
+          value="https://twitter/your-handle">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <h2 class="mt-5">Uploaded Files</h2>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Download Link</th>
+        </tr>
+      </thead>
+      <tbody id="fileTableBody">
+        <!-- The table will be populated dynamically using JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bootstrap and jQuery JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    $(document).ready(function () {
+      refreshFileTable();
+      // Form submission
+      $("#uploadForm").submit(function (event) {
+        event.preventDefault();
+        const form = $(this)[0];
+        const formData = new FormData(form);
+
+        $.ajax({
+          type: "POST",
+          url: window.location.origin + "/c2e-media/upload",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function (response) {
+            // Handle successful form submission (optional)
+            console.log("File uploaded successfully.");
+            // Clear the form fields
+            form.reset();
+            // Refresh the table to show the updated list of uploaded files
+            refreshFileTable();
+          },
+          error: function (error) {
+            console.error("Error uploading file:", error);
+          },
+        });
+      });
+
+      // Function to refresh the table with the updated list of uploaded files
+      function refreshFileTable() {
+        $.get(window.location.origin + "/c2e", function (data) {
+          const fileTableBody = $("#fileTableBody");
+          fileTableBody.empty();
+
+          data.forEach(function (file) {
+            const fileUrl = window.location.origin + "/c2e-storage/c2eid-" + file.id + ".c2e";
+            const fileName = "c2eid-" + file.id + ".c2e";
+            const downloadLink = `<a href="${fileUrl}" download>${fileName}</a>`;
+            fileTableBody.append(`<tr><td>${file.title}</td><td>${file.description}</td><td>${downloadLink}</td></tr>`);
+          });
+        });
+      }
+
+      // Initial table refresh
+      refreshFileTable();
+    });
+  </script>
+</body>
+
+</html>

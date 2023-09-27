@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>C2E Provider API</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" type="image/x-icon" href="https://loopback.io/favicon.ico">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Font Awesome CSS for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+  <style>
+    h3 {
+      margin-left: 25px;
+      text-align: center;
+    }
+
+    a,
+    a:visited {
+      color: #3f5dff;
+    }
+
+    h3 a {
+      margin-left: 10px;
+    }
+
+    a:hover,
+    a:focus,
+    a:active {
+      color: #001956;
+    }
+
+    .power {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .info {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%)
+    }
+
+    .info h1 {
+      text-align: center;
+      margin-bottom: 0;
+    }
+
+    .info p {
+      text-align: center;
+      margin-bottom: 3em;
+      margin-top: 1em;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: rgb(29, 30, 32);
+        color: white;
+      }
+
+      a,
+      a:visited {
+        color: #4990e2;
+      }
+
+      a:hover,
+      a:focus,
+      a:active {
+        color: #2b78ff;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="info">
+    <h1>c2e-provider-api</h1>
+    <p>Version 1.0.0</p>
+
+    <h3>OpenAPI spec: <a href="./openapi.json">/openapi.json</a></h3>
+    <h3>API Explorer: <a href="./explorer">/explorer</a></h3>
+    <br />
+    <!--
+    <h3><a href="./reader/index.html">Ebook</a> ></h3>
+    <h3><a href="./reader/content-selector.html">Ebook Content Selector</a> ></h3>
+    <h2><a href="epub-to-c2e.html">EPUB to C2E</a> ></h2>
+     -->
+    <!-- bootstrap link button 'EBook (EPUB) to C2E Maker' -->
+    <a href="epubs-to-c2e.html" class="btn btn-primary btn-lg active" role="button" aria-pressed="true"
+      style="margin-left: 65px;text-align: center;">EBook (EPUB)
+      to C2E Maker</a>
+  </div>
+
+  <footer class="power">
+    <a href="https://loopback.io" target="_blank">
+      <img src="https://loopback.io/images/branding/powered-by-loopback/blue/powered-by-loopback-sm.png" />
+    </a>
+  </footer>
+</body>
+
+</html>

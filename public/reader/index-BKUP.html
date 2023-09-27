@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EPUB.js Spreads Example</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+  <script src="./epub.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="examples.css">
+  <style>
+    .page-left {
+      padding: 20px;
+      float: left;
+      width: 25%;
+      border: 0px solid black;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      min-height: 650px;
+    }
+    .page-right {
+      float: left;
+      width: 70%;
+      border: 0px solid blue;
+    }
+  </style>
+
+</head>
+<!-- 
+<body>
+    <a id="prev" href="#prev" class="navlink">...</a>
+    <div id="viewer" class="scrolled"></div>
+    <a id="next" href="#next" class="navlink">...</a>
+  
+    <script>
+      // Load the opf
+      var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
+      var url = params && params.get("url") && decodeURIComponent(params.get("url"));
+      var currentSectionIndex = (params && params.get("loc")) ? params.get("loc") : undefined;
+  
+      var book = ePub(url || "9781119861683.epub");
+      var rendition = book.renderTo("viewer", {
+        flow: "scrolled-doc",
+        width: "100%",
+        fullsize: true
+      });
+  
+      rendition.display(currentSectionIndex);
+  
+  
+      var next = document.getElementById("next");
+      next.addEventListener("click", function(e){
+        rendition.next();
+        e.preventDefault();
+      }, false);
+  
+      var prev = document.getElementById("prev");
+      prev.addEventListener("click", function(e){
+        rendition.prev();
+        e.preventDefault();
+      }, false);
+  
+      rendition.on("relocated", function(location){
+        console.log(location);
+      });
+  
+      rendition.on("rendered", function(section){
+        var nextSection = section.next();
+        var prevSection = section.prev();
+  
+        if(nextSection) {
+          nextNav = book.navigation.get(nextSection.href);
+  
+          if(nextNav) {
+            nextLabel = nextNav.label;
+          } else {
+            nextLabel = "next";
+          }
+  
+          next.textContent = nextLabel + " »";
+        } else {
+          next.textContent = "";
+        }
+  
+        if(prevSection) {
+          prevNav = book.navigation.get(prevSection.href);
+  
+          if(prevNav) {
+            prevLabel = prevNav.label;
+          } else {
+            prevLabel = "previous";
+          }
+  
+          prev.textContent = "« " + prevLabel;
+        } else {
+          prev.textContent = "";
+        }
+  
+      });
+  
+    </script>
+  
+  </body>
+ -->
+ 
+
+<body>
+
+  <div class="page-left">
+    <h2>Table of content</h2>
+    <div id="toc-tree"></div>
+  </div>
+
+  <div class="page-right">
+
+  <select id="toc"></select>
+  
+  <div class="nav-container" style="margin: 0 auto; width: 80%;">
+    <a id="prev" href="#prev" class="arrow">‹</a>
+    &nbsp; Preveious &nbsp; <strong><span id="sectionTitle"></span></strong> &nbsp; Next
+    <a id="next" href="#next" class="arrow">›</a>
+  </div>
+  <div id="viewer" class="spreads"></div>  
+
+  <script>
+    var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
+    var url = params && params.get("url") && decodeURIComponent(params.get("url"));
+    var currentSectionIndex = (params && params.get("loc")) ? params.get("loc") : undefined;
+
+    // Load the opf
+    var book = ePub(url || "9781119861683.epub");
+    window.rendition = book.renderTo("viewer", {
+      flow: "scrolled-doc",
+      width: "100%",
+      fullsize: true
+    });
+
+
+    rendition.display(currentSectionIndex);
+
+    book.ready.then(function() {
+
+      var next = document.getElementById("next");
+
+      next.addEventListener("click", function(e){
+        book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+        e.preventDefault();
+      }, false);
+
+      var prev = document.getElementById("prev");
+      prev.addEventListener("click", function(e){
+        book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+        e.preventDefault();
+      }, false);
+
+      var keyListener = function(e){
+
+        // Left Key
+        if ((e.keyCode || e.which) == 37) {
+          book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+        }
+
+        // Right Key
+        if ((e.keyCode || e.which) == 39) {
+          book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+        }
+
+      };
+
+      rendition.on("keyup", keyListener);
+      document.addEventListener("keyup", keyListener, false);
+
+    })
+
+    var title = document.getElementById("title");
+
+    rendition.on("rendered", function(section){
+      var current = book.navigation && book.navigation.get(section.href);
+      if (current) {
+        $("#sectionTitle").text(current.label);
+        window.epubTocCurrentHref = current.href;
+        initTOC(rendition.book.navigation);
+        
+
+        var $select = document.getElementById("toc");
+        var $selected = $select.querySelector("option[selected]");
+        if ($selected) {
+          $selected.removeAttribute("selected");
+        }
+
+        var $options = $select.querySelectorAll("option");
+        for (var i = 0; i < $options.length; ++i) {
+          let selected = $options[i].getAttribute("ref") === current.href;
+          if (selected) {
+            $options[i].setAttribute("selected", "");
+          }
+        }
+      }
+
+    });
+
+    window.addEventListener("unload", function () {
+      console.log("unloading");
+      this.book.destroy();
+    });
+
+    
+    book.loaded.navigation.then(function(toc){
+			var $select = document.getElementById("toc"),
+					docfrag = document.createDocumentFragment();
+
+			toc.forEach(function(chapter) {
+				var option = document.createElement("option");
+				option.textContent = chapter.label;
+				option.setAttribute("ref", chapter.href);
+
+				docfrag.appendChild(option);
+			});
+
+			$select.appendChild(docfrag);
+
+			$select.onchange = function(){
+					var index = $select.selectedIndex,
+							url = $select.options[index].getAttribute("ref");
+					rendition.display(url);
+					return false;
+			};
+
+      //initTOC(toc);
+
+		});
+
+/* 
+    rendition.on("relocated", function(location){
+      console.log(location);
+
+      var next = book.package.metadata.direction === "rtl" ?  document.getElementById("prev") : document.getElementById("next");
+      var prev = book.package.metadata.direction === "rtl" ?  document.getElementById("next") : document.getElementById("prev");
+
+      if (location.atEnd) {
+        next.style.visibility = "hidden";
+      } else {
+        next.style.visibility = "visible";
+      }
+
+      if (location.atStart) {
+        prev.style.visibility = "hidden";
+      } else {
+        prev.style.visibility = "visible";
+      }
+
+    });
+
+    rendition.on("layout", function(layout) {
+      let viewer = document.getElementById("viewer");
+
+      if (layout.spread) {
+        viewer.classList.remove('single');
+      } else {
+        viewer.classList.add('single');
+      }
+    });
+
+    book.loaded.navigation.then(function(toc){
+			var $select = document.getElementById("toc"),
+					docfrag = document.createDocumentFragment();
+
+			toc.forEach(function(chapter) {
+				var option = document.createElement("option");
+				option.textContent = chapter.label;
+				option.setAttribute("ref", chapter.href);
+
+				docfrag.appendChild(option);
+			});
+
+			$select.appendChild(docfrag);
+
+			$select.onchange = function(){
+					var index = $select.selectedIndex,
+							url = $select.options[index].getAttribute("ref");
+					rendition.display(url);
+					return false;
+			};
+
+		});
+
+
+ */
+
+  </script>
+  </div>
+
+  <script>
+    function makeTOCDataRecursive(toc) {
+      var toc_data = [];
+      toc.forEach(function(chapter) {
+        var children = [];
+        if (chapter.subitems.length > 0) {
+          children = makeTOCDataRecursive(chapter.subitems);
+        }
+        toc_data.push({ text: chapter.label, href: chapter.href, children: children });
+      });
+      return toc_data;
+    };
+
+
+    function initTOC(toc_obj) {
+      var toc_data = makeTOCDataRecursive(toc_obj.toc);
+      //  make jstree script with sample data in hierarchical order and also removed the folder and file node icons with carrot icons only. Also bind click events to  the nodes.
+      $('#toc-tree').jstree({  
+        'core' : {
+          "themes" : { "icons": false },
+          'data' : toc_data
+        },
+        "plugins" : [ "wholerow" ]
+      });
+
+      $('#toc-tree').on("select_node.jstree", function (e, data) { 
+        data.instance.toggle_node(data.node); 
+        console.log('data.node >>>>> ', data.node.original.href);
+        
+        var currentOnSelect = book.navigation.get(data.node.original.href);
+        if (currentOnSelect) {
+          $("#sectionTitle").text(currentOnSelect.label);
+        }
+
+        window.rendition.display(data.node.original.href);
+      });
+      
+      $('#toc-tree').on("loaded.jstree", function (e, instance) { 
+        console.log('loaded.jstree >>>>> ', instance);
+        // select first node of jstree instance object
+        instance.instance.select_node(instance.instance.get_node(0));
+
+        var currentOnSelect = book.navigation.get(window.epubTocCurrentHref);
+        if (currentOnSelect) {
+          $("#sectionTitle").text(currentOnSelect.label);
+        }
+      });
+
+    }
+  </script>
+</body>
+ 
+
+ <!-- 
+<body>
+	<select id="toc"></select>
+	<div id="viewer" class="scrolled"></div>
+
+	<script>
+		var $viewer = document.getElementById("viewer");
+		var $next = document.getElementById("next");
+		var $prev = document.getElementById("prev");
+		var currentSectionIndex = 9;
+		// Load the opf
+		var book = ePub("9781119861683.epub");
+		var rendition = book.renderTo("viewer", { flow: "scrolled-doc", width: 600, height: 400});
+		var displayed = rendition.display(currentSectionIndex);
+
+		book.loaded.navigation.then(function(toc){
+			var $select = document.getElementById("toc"),
+					docfrag = document.createDocumentFragment();
+
+			toc.forEach(function(chapter) {
+				var option = document.createElement("option");
+				option.textContent = chapter.label;
+				option.ref = chapter.href;
+
+				docfrag.appendChild(option);
+			});
+
+			$select.appendChild(docfrag);
+
+			$select.onchange = function(){
+					var index = $select.selectedIndex,
+							url = $select.options[index].ref;
+					rendition.display(url);
+					return false;
+			};
+
+
+		});
+	</script>
+
+</body>
+ -->
+</html>

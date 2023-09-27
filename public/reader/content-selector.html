@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EPUB.js Spreads Example</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+  <script src="./epub.js"></script>
+  <script src="./tincan.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="examples.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+    crossorigin="anonymous"></script>
+
+  <style>
+    .page-sidebar {
+      padding: 15px;
+      float: left;
+      width: 15%;
+      border: 0px solid black;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      min-height: 650px;
+    }
+
+    .page-middle {
+      float: left;
+      width: 65%;
+      border: 0px solid blue;
+    }
+
+    .jstree-node-selected {
+      font-weight: bold;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div class="page-sidebar">
+    <h2>Table of content</h2>
+    <div id="toc-tree"></div>
+  </div>
+
+  <div class="page-middle">
+    <div class="nav-container" style="margin: 0 auto; width: 80%;">
+      <a id="prev" href="#prev" class="arrow">‹</a>
+      &nbsp; Preveious &nbsp; <strong><span id="sectionTitle"></span></strong> &nbsp; Next
+      <a id="next" href="#next" class="arrow">›</a>
+    </div>
+    <div id="viewer" class="spreads"></div>
+
+    <script>
+      var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
+      var url = params && params.get("url") && decodeURIComponent(params.get("url"));
+      var currentSectionIndex = (params && params.get("loc")) ? params.get("loc") : undefined;
+
+      // Load the opf
+      var book = ePub(url || "../ebooks/9781119861683.epub");
+      window.rendition = book.renderTo("viewer", {
+        flow: "scrolled-doc",
+        width: "100%",
+        fullsize: true
+      });
+
+
+      rendition.display(currentSectionIndex);
+
+      var getflatToc = function (toc) {
+        let flat_toc = [];
+        toc.forEach(function (chapter) {
+          flat_toc.push(chapter);
+          if (chapter.subitems.length > 0) {
+            flat_toc = flat_toc.concat(getflatToc(chapter.subitems));
+          }
+        });
+        return flat_toc;
+      };
+
+      book.ready.then(function () {
+
+        var next = document.getElementById("next");
+
+        next.addEventListener("click", function (e) {
+          book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+          e.preventDefault();
+        }, false);
+
+        var prev = document.getElementById("prev");
+        prev.addEventListener("click", function (e) {
+          book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+          e.preventDefault();
+        }, false);
+
+        var keyListener = function (e) {
+
+          // Left Key
+          if ((e.keyCode || e.which) == 37) {
+            book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+          }
+
+          // Right Key
+          if ((e.keyCode || e.which) == 39) {
+            book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+          }
+
+        };
+
+        rendition.on("keyup", keyListener);
+        document.addEventListener("keyup", keyListener, false);
+
+      })
+
+      var title = document.getElementById("title");
+
+      rendition.on("rendered", function (section) {
+        var current = book.navigation && book.navigation.get(section.href);
+        if (current) {
+          var jstree_instance = $('#toc-tree').jstree(true);
+          $("#sectionTitle").text(current.label);
+          window.epubTocCurrentHref = current.href;
+          if (!jstree_instance) {
+            initTOC(rendition.book.navigation);
+          } else {
+            let node_json = selectFromTreeJSONRecursive(jstree_instance.get_json(), current.label);
+            if (node_json && jstree_instance.is_closed(node_json.id)) {
+              jstree_instance.open_node(node_json.id);
+            }
+          }
+        }
+      });
+
+      window.addEventListener("unload", function () {
+        this.book.destroy();
+      });
+
+      rendition.hooks.content.register(function (contents) {
+        console.log('-------------------');
+        console.log(contents.document.baseURI);
+        console.log(contents.document.title);
+        
+			var tincan = new TinCan (
+			 {
+				recordStores: [
+				  {
+					endpoint: "https://c2e-trax.curriki.org/trax/ws/xapi",
+					username: "9491dfe3-fd45-4bb8-b9d5-3480bcddd780",
+					password: "8a290a3a-ff9b-4d5c-a4e9-96550d85b393",
+					allowFail: false
+				  }
+				]
+			  }
+			);
+			var statement = {
+			  actor: {
+				mbox: "mailto:niket@curriki.org",
+				name: "C2E EPUB User"
+			  },
+			  verb: {
+				id: "http://activitystrea.ms/schema/1.0/consume",
+				display: {
+					"en-US": "consumed"
+				 }
+				},
+			  object: {
+				id: contents.document.baseURI,
+				definition: {
+				  name: {
+					"en-US": contents.document.title
+				  }
+				}
+			  }
+			};
+			tincan.sendStatement(statement);
+
+        
+        contents.window.highlight_whole_page = function (contents) {
+          $(contents.document.body).css("border", "2px solid magenta").css("padding", "10px").css("margin", "10px");
+        }
+
+        contents.window.highlight_chpater_section = function (chapter_href, document_body, current_chapter_href) {
+          const chapter_href_segments = chapter_href.split('#');
+          const chapter_file = chapter_href_segments[0];
+          const chapter_section = chapter_href_segments[1];
+          if (chapter_file && chapter_file === current_chapter_href && chapter_section) {
+            const chapter_section_element = document_body.querySelector(`#${chapter_section}`);
+            if (chapter_section_element) {
+              const chapter_section_element_parent = chapter_section_element.parentElement;
+              $(chapter_section_element_parent).css("border", "2px solid magenta").css("padding", "10px").css("margin", "10px");
+            }
+          }
+        }
+
+        contents.window.onmessage = function (e) {
+          if (e.data.hasOwnProperty('selected_chapters') && Array.isArray(e.data.selected_chapters) && e.data.hasOwnProperty('current_chapter_href')) {
+            var current_chapter_href_found = e.data.selected_chapters.find(chapter => chapter.href === e.data.current_chapter_href);
+            if (current_chapter_href_found) {
+              contents.window.highlight_whole_page(contents);
+            } else {
+              // remove 'border' style from body
+              $(contents.document.body).css("border", "none");
+              // finde all 'section' tags in contents.document.body and remove 'border' style
+              const all_sections = contents.document.body.querySelectorAll('section');
+              for (let i = 0; i < all_sections.length; i++) {
+                const section = all_sections[i];
+                const section_parent = section.parentElement;
+                $(section).css("border", "none");
+              }
+              // highlight selected chapters
+              for (let i = 0; i < e.data.selected_chapters.length; i++) {
+                const chapter = e.data.selected_chapters[i];
+                contents.window.highlight_chpater_section(chapter.href, contents.document.body, e.data.current_chapter_href);
+              }
+            }
+          }
+        };
+
+        // run settimeinterval to check rendition has location property only once
+        var checkRenditionLocation = setInterval(function () {
+          if (rendition.location) {
+            $("iframe").get(0).contentWindow.postMessage({ selected_chapters: getSelectedChapters(), current_chapter_href: rendition.location.start.href }, '*');
+            clearInterval(checkRenditionLocation);
+          }
+        }, 500);
+      });
+
+    </script>
+  </div>
+
+  <div class="page-sidebar">
+    <h5>Selected EPUB Sections</h5>
+    <p>
+      <button type="button" class="btn btn-primary" onclick="create_epub()">Create New Project</button>
+    </p>
+    <div id="c2e-toc-tree"></div>
+  </div>
+
+  <script>
+    function selectFromTreeJSONRecursive(tree_json, current_label) {
+      let selected_node = tree_json.find(node => node.text === current_label);
+      if (!selected_node) {
+        tree_json.forEach(function (node) {
+          if (node.children.length > 0) {
+            selected_node = selectFromTreeJSONRecursive(node.children, current_label);
+          }
+        });
+      }
+      return selected_node;
+    }
+
+    function makeTOCDataRecursive(toc, index = 0) {
+      var toc_data = [];
+      toc.forEach(function (chapter) {
+        index = (index + 1);
+        var children = [];
+        if (chapter.subitems.length > 0) {
+          children = makeTOCDataRecursive(chapter.subitems, index);
+        }
+        toc_data.push({ text: chapter.label, href: chapter.href, children: children, data: { chapter_href: chapter.href, index } });
+      });
+      return toc_data;
+    };
+
+
+    function initTOC(toc_obj) {
+      var toc_data = makeTOCDataRecursive(toc_obj.toc);
+      $('#toc-tree').jstree({
+        'core': {
+          "themes": { "icons": false },
+          'data': toc_data
+        },
+        "plugins": ["wholerow", "checkbox"]
+      });
+
+      $('#toc-tree').on("select_node.jstree", function (e, data) {
+        data.instance.toggle_node(data.node);
+        var currentOnSelect = book.navigation.get(data.node.original.href);
+        if (currentOnSelect) {
+          $("#sectionTitle").text(currentOnSelect.label);
+        }
+        window.rendition.display(data.node.original.href);
+      });
+
+      $('#toc-tree').on("loaded.jstree", function (e, instance) {
+        var currentOnSelect = book.navigation.get(window.epubTocCurrentHref);
+        if (currentOnSelect) {
+          $("#sectionTitle").text(currentOnSelect.label);
+          instance.instance.open_node(instance.instance.get_json().find(tocEl => tocEl.text === currentOnSelect.label).id);
+        }
+      });
+
+      $('#toc-tree').on("changed.jstree", function (e, instance) {
+        initC2eTOC();
+      });
+    }
+
+    function initC2eTOC() {
+      const selected_chapters = getSelectedChapters();
+      const selected_chapters_anchors_list_html = selected_chapters.map(chapter => `<li><a onclick="open_chapter_c2e_contet_select('${chapter.href}');" href="#">${chapter.label}</a></li>`).join('');
+      $('#c2e-toc-tree').html(`<ul>${selected_chapters_anchors_list_html}</ul>`);
+      $("iframe").get(0).contentWindow.postMessage({ selected_chapters: getSelectedChapters(), current_chapter_href: rendition.location.start.href }, '*');
+    }
+
+    function getSelectedChapters() {
+      if ($('#toc-tree').jstree(true).get_checked) {
+        var flat_toc = getflatToc(rendition.book.navigation.toc);
+        let selected_nodes_indexes = $('#toc-tree').jstree(true).get_checked(true).map(node => flat_toc.findIndex(chapter => chapter.href === node.data.chapter_href));
+        let selected_chapters = selected_nodes_indexes.sort((a, b) => a - b).map(index => flat_toc[index]);
+        return selected_chapters;
+      } else {
+        return [];
+      }
+    }
+
+    function open_chapter_c2e_contet_select(selected_c2e_chapter_href) {
+      window.currentC2EChapterHref = selected_c2e_chapter_href;
+      window.rendition.display(selected_c2e_chapter_href);
+      $("iframe").get(0).contentWindow.postMessage({ selected_chapters: getSelectedChapters(), current_chapter_href: rendition.location.start.href }, '*');
+    }
+
+    function create_epub() {
+      const selected_chapters = getSelectedChapters();
+      const c2e_media_id = "";
+      console.log('selected_chapters >>>>>>>> ', selected_chapters);
+    }
+  </script>
+
+</body>
+
+</html>

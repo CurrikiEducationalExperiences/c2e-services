@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.COMMON_NAME}}
+  namespace: {{.Values.COMMON_NAME}}
+  labels:
+    app: {{.Values.COMMON_NAME}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{.Values.COMMON_NAME}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.COMMON_NAME}}
+    spec:
+      containers:
+        - name: {{.Values.COMMON_NAME}}
+          command:
+            - sh
+            - -c
+            - rm -rf /home/node/app/public/c2e-media-storage && rm -rf  /home/node/app/public/c2e-storage
+              && ln -s /storage/c2e-storage /home/node/app/public/c2e-storage && ln -s
+              /storage/c2e-media-storage /home/node/app/public/c2e-media-storage && node
+              .
+          image: {{.Values.image.repository}}
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - mountPath: /storage
+              name: c2e-provider-api
+              # subPath: c2e-media-storage
+      volumes:
+        - name: c2e-provider-api
+          persistentVolumeClaim:
+            claimName: c2e-provider-api
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Values.COMMON_NAME}}
+  namespace: {{.Values.COMMON_NAME}}
+spec:
+  selector:
+    app: {{.Values.COMMON_NAME}}
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

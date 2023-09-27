@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EPUB.js Spreads Example</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+  <script src="./epub.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="examples.css">
+  <style>
+    .page-left {
+      padding: 20px;
+      float: left;
+      width: 25%;
+      border: 0px solid black;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      min-height: 650px;
+    }
+
+    .page-right {
+      float: left;
+      width: 70%;
+      border: 0px solid blue;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <input type="file" id="fileInput" />
+  <button onclick="initBook()">Load Ebook</button>
+
+
+  <div class="page-left">
+    <h2>Table of content</h2>
+    <div id="toc-tree"></div>
+  </div>
+
+  <div class="page-right">
+    <div class="nav-container" style="margin: 0 auto; width: 80%;">
+      <a id="prev" href="#prev" class="arrow">‹</a>
+      &nbsp; Preveious &nbsp; <strong><span id="sectionTitle"></span></strong> &nbsp; Next
+      <a id="next" href="#next" class="arrow">›</a>
+    </div>
+    <div id="viewer" class="spreads"></div>
+
+    <script type="text/javascript">
+      function getFileSource() {
+        const fileInput = document.getElementById('fileInput');
+        const selectedFile = fileInput.files[0]; // Get the first selected file
+        return selectedFile;
+      }
+
+      function initBook() {
+        var book_url = getFileSource();
+        var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
+        var url = params && params.get("url") && decodeURIComponent(params.get("url"));
+        var currentSectionIndex = (params && params.get("loc")) ? params.get("loc") : undefined;
+
+        // Load the opf
+        //var book = ePub(url || "../ebooks/9781119861683.epub");
+        window.book = ePub(book_url);
+        // let epb = new ePub();
+        // window.book = epb.open(book_url);
+        window.rendition = book.renderTo("viewer", {
+          flow: "scrolled-doc",
+          width: "100%",
+          fullsize: true
+        });
+
+
+        rendition.display(currentSectionIndex);
+
+        book.ready.then(function () {
+
+          var next = document.getElementById("next");
+
+          next.addEventListener("click", function (e) {
+            book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+            e.preventDefault();
+          }, false);
+
+          var prev = document.getElementById("prev");
+          prev.addEventListener("click", function (e) {
+            book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+            e.preventDefault();
+          }, false);
+
+          var keyListener = function (e) {
+
+            // Left Key
+            if ((e.keyCode || e.which) == 37) {
+              book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+            }
+
+            // Right Key
+            if ((e.keyCode || e.which) == 39) {
+              book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+            }
+
+          };
+
+          rendition.on("keyup", keyListener);
+          document.addEventListener("keyup", keyListener, false);
+
+        })
+
+        var title = document.getElementById("title");
+
+        rendition.on("rendered", function (section) {
+
+          //instance.instance.select_node(instance.instance.get_json().find(tocEl => tocEl.text === currentOnSelect.label).id);
+          // get jstree instance as jstree_instance object
+
+
+          var current = book.navigation && book.navigation.get(section.href);
+          if (current) {
+            var jstree_instance = $('#toc-tree').jstree(true);
+            $("#sectionTitle").text(current.label);
+            window.epubTocCurrentHref = current.href;
+            if (!jstree_instance) {
+              initTOC(rendition.book.navigation);
+            } else {
+              let node_json = selectFromTreeJSONRecursive(jstree_instance.get_json(), current.label);
+              console.log('node_json **** ', node_json);
+              if (node_json) {
+                jstree_instance.deselect_all();
+                jstree_instance.select_node(node_json.id);
+              }
+
+            }
+          }
+
+        });
+
+        window.addEventListener("unload", function () {
+          console.log("unloading");
+          this.book.destroy();
+        });
+      }
+
+    </script>
+  </div>
+
+  <script>
+    function selectFromTreeJSONRecursive(tree_json, current_label) {
+      let selected_node = tree_json.find(node => node.text === current_label);
+      if (!selected_node) {
+        tree_json.forEach(function (node) {
+          if (node.children.length > 0) {
+            selected_node = selectFromTreeJSONRecursive(node.children, current_label);
+          }
+        });
+      }
+      return selected_node;
+    }
+
+    function makeTOCDataRecursive(toc) {
+      var toc_data = [];
+      toc.forEach(function (chapter) {
+        var children = [];
+        if (chapter.subitems.length > 0) {
+          children = makeTOCDataRecursive(chapter.subitems);
+        }
+        toc_data.push({ text: chapter.label, href: chapter.href, children: children });
+      });
+      return toc_data;
+    };
+
+
+    function initTOC(toc_obj) {
+      var toc_data = makeTOCDataRecursive(toc_obj.toc);
+      //  make jstree script with sample data in hierarchical order and also removed the folder and file node icons with carrot icons only. Also bind click events to  the nodes.
+      $('#toc-tree').jstree({
+        'core': {
+          "themes": { "icons": false },
+          'data': toc_data
+        },
+        "plugins": ["wholerow"]
+      });
+
+      $('#toc-tree').on("select_node.jstree", function (e, data) {
+        data.instance.toggle_node(data.node);
+        var currentOnSelect = book.navigation.get(data.node.original.href);
+        if (currentOnSelect) {
+          $("#sectionTitle").text(currentOnSelect.label);
+        }
+        window.rendition.display(data.node.original.href);
+      });
+
+      $('#toc-tree').on("loaded.jstree", function (e, instance) {
+        var currentOnSelect = book.navigation.get(window.epubTocCurrentHref);
+        if (currentOnSelect) {
+          $("#sectionTitle").text(currentOnSelect.label);
+          instance.instance.select_node(instance.instance.get_json().find(tocEl => tocEl.text === currentOnSelect.label).id);
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

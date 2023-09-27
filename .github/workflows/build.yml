@@ -1,0 +1,67 @@
+# build.yml
+on:
+  # pull_request:
+  #   paths:
+  #     - '**'
+  push:
+    paths:
+      - '**'
+    branches: # array of glob patterns matching against refs/heads. Optional; defaults to all
+      - develop # triggers on pushes that contain changes in master
+
+name: Build
+
+# https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
+env:
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  AWS_DEFAULT_OUTPUT: ${{ secrets.AWS_DEFAULT_OUTPUT }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  ECR_USERNAME: ${{secrets.ECR_USERNAME}}
+  ECR_ACCOUNT: ${{secrets.ECR_ACCOUNT}}
+  CONTAINER_IMAGE: c2e-provider-api:${{ github.sha }}
+  AWS_ACCOUNT_ID: ${{secrets.AWS_ACCOUNT_ID}}
+  EKS_CLUSTER_NAME: ${{secrets.EKS_CLUSTER_NAME}}
+  PROJECT_NAME: c2e
+  DB_HOST: ${{secrets.DB_HOST}}
+  DB_USER: ${{secrets.DB_USER}}
+  DB_DATABASE: ${{secrets.DB_DATABASE}}
+  DB_PASS: ${{secrets.DB_PASS}}
+
+jobs:
+  build-and-push:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Setup ECR
+        run: |
+          # Login to AWS ECR
+          aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username $ECR_USERNAME --password-stdin $ECR_ACCOUNT
+
+      - name: Build and tag the image
+        run: |
+          # Build and tag the image
+          docker build \
+            -t $CONTAINER_IMAGE \
+            -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE \
+            --build-arg DB_HOST=$DB_HOST \
+            --build-arg DB_USER=$DB_USER \
+            --build-arg DB_DATABASE=$DB_DATABASE \
+            --build-arg DB_PASS=$DB_PASS ./
+
+      - name: Push Image
+        run: |
+          # Push image to AWS ECR
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE
+
+      - name: Deploy
+        run: |
+          # Deploy to Kubernetes
+          export DOCKER_IMAGE_NAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE
+          aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME}
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+          helm upgrade --namespace c2e-provider-api --install --debug ${PROJECT_NAME} charts/c2e-provider-api \
+          --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE

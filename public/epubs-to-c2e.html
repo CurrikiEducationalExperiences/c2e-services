@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBook (EPUB) to C2E Maker</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Font Awesome CSS for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+
+<body>
+  <div class="container mt-5">
+    <!-- back button with icon -->
+    <a href="./" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Back</a>
+    <div class="rounded p-4 mb-4 bg-light">
+      <h2>Upload EBook (EPUB)</h2>
+      <form>
+        <div class="form-group">
+          <div class="row">
+            <div class="col col-md-4">
+              <label for="ebookUpload">Choose an EPUB file:</label>
+              <input type="file" class="form-control-file" id="ebookUpload" accept=".epub" required>
+            </div>
+            <div class="col col-md-4">
+              <label for="ebookUpload">ISBN:</label>
+              <input type="text" class="form-control-file" id="isbn" name="isbn" required>
+            </div>
+            <div class="col col-md-4 text-end" style="text-align: center; padding-top: 15px;">
+              <button id="uploadEpub" type="submit" class="btn btn-primary">Upload</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div id="accordion">
+      <!-- Accordion items will be populated using jQuery -->
+    </div>
+    <!-- make #c2eModal bootstrap modal with form have name, email and url fields -->
+    <div class="modal" id="c2eModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Licensee Information</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <h3 id="c2eMediaTitle"></h3>
+            <form id="c2eForm">
+              <input type="hidden" name="c2eMediaId" id="c2eMediaId" value="">
+              <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" id="name" name="name" value="Waqar" required>
+              </div>
+              <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" class="form-control" id="email" name="email" value="waqar@curriki.org" required>
+              </div>
+              <div class="form-group">
+                <label for="url">URL:</label>
+                <input type="url" class="form-control" id="url" name="url" value="https://x.com/waqarmnr" required>
+              </div>
+            </form>
+            <div class="alert alert-success" role="alert" id="c2eSuccessAlert" style="display: none;">
+              <a href="#"><i class="fas fa-download"></i>&nbsp;<span><span></a>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="downloadC2eBtn"> Make
+              C2E</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+
+    // Upload EPUB file to the server
+    function initUploadEpub() {
+      $('#uploadEpub').click(function (e) {
+        e.preventDefault();
+
+        const file = $('#ebookUpload')[0].files[0];
+        const isbn = $('#isbn').val();
+        if (!file) {
+          alert('Please select an EPUB file!');
+          return;
+        }
+        if (!isbn) {
+          alert('Please enter ISBN!');
+          return;
+        }
+
+        // Create a FormData object
+        const formData = new FormData();
+        formData.append('ebook', file);
+        formData.append('isbn', isbn);
+
+        // Replace with your API endpoint URL
+        const apiEndpoint = '/c2e-media/create-epubs';
+
+        // Send the request to the server
+        $.ajax({
+          url: apiEndpoint,
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function (data) {
+            initLoadC2eMedia();
+          },
+          error: function (error) {
+            alert('Error uploading EBook!');
+          }
+        });
+      });
+    }
+
+
+    // init accordion collapse
+    function initAccordionCollapse() {
+      // accordion collapse event to load child items (C2E media)
+      $('#accordion').on('show.bs.collapse', function (e) {
+        const target = $(e.target);
+        const collapseId = target.attr('id');
+        const parentId = collapseId.replace('collapse', '');
+
+        // Replace with your API endpoint URLs
+        apiEndpoint = '/c2e-media';
+
+        // apiEndpoint Open API filter parameters
+        const filter = {
+          where: {
+            parentId: parentId
+          }
+        };
+
+        // js code to make the filter parameter a query string
+        apiEndpoint += '?filter=' + JSON.stringify(filter);
+
+        // Fetch data using jQuery's AJAX
+        $.get(apiEndpoint, function (data) {
+          const cardBody = target.find('.card-body');
+          const table = `
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Download</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        `;
+
+          cardBody.html(table);
+
+          data.forEach(item => {
+            const row = `
+                            <tr>
+                                <td>${item.title}</td>
+                                <td><a onclick="openModel('${item.id}', '${item.title}')" class="btn btn-success"><i class="fas fa-download"></i> Get C2E</a></td>
+                            </tr>
+                        `;
+
+            cardBody.find('tbody').append(row);
+          });
+        });
+      });
+    }
+
+    // empty accordian
+    function emptyAccordion() {
+      $('#accordion').empty();
+    }
+
+    // Fetch data and populate the accordion and tables
+    function initLoadC2eMedia() {
+      emptyAccordion();
+
+      // Replace with your API endpoint URLs
+      let apiEndpoint = '/c2e-media';
+
+      // apiEndpoint Open API filter parameters
+      const filter = {
+        where: {
+          type: 'epub',
+          parentId: null
+        }
+      };
+
+      // js code to make the filter parameter a query string
+      apiEndpoint += '?filter=' + JSON.stringify(filter);
+
+      // Fetch data using jQuery's AJAX
+      $.get(apiEndpoint, function (data) {
+        const accordion = $('#accordion');
+
+        data.forEach(item => {
+          const card = `
+                        <div class="card">
+                            <div class="card-header" id="heading${item.id}">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link" data-toggle="collapse" data-target="#collapse${item.id}" aria-expanded="true" aria-controls="collapse${item.id}">
+                                        ${item.title} (ID: ${item.id})
+                                    </button>
+                                </h5>
+                            </div>
+
+                            <div id="collapse${item.id}" class="collapse" aria-labelledby="heading${item.id}" data-parent="#accordion">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Download</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>${item.title}</td>
+                                                <td><a href="#" class="btn btn-success"><i class="fas fa-download"></i> Get C2E</a></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+          accordion.append(card);
+        });
+      });
+    }
+
+    //function that open bootstrap model with form have name, email and url fields
+    function openModel(c2eMediaId, title) {
+      // set c2eMediaId in hidden field
+      $('#c2eMediaId').val(c2eMediaId);
+      $('#c2eMediaTitle').text(title);
+      //open model
+      $('#c2eModal').modal('show');
+      //downloadC2e(c2eMediaId);
+    }
+
+    $(document).ready(function () {
+      initUploadEpub();
+      initLoadC2eMedia();
+      initAccordionCollapse();
+
+      // #c2eModal on modal close event
+      $('#c2eModal').on('hide.bs.modal', function (e) {
+        $('#c2eSuccessAlert a').attr('href', '#');
+        $('#c2eSuccessAlert a').attr('target', '_blank');
+        $('#c2eSuccessAlert a span').text("");
+        $('#c2eSuccessAlert').hide();
+      });
+
+      // submit #c2eForm on #downloadC2eBtn click
+      $('#downloadC2eBtn').click(function (e) {
+        e.preventDefault();
+        // get form data as json object
+        const formData = {
+          ceeMediaId: $('#c2eMediaId').val(),
+          name: $('#name').val(),
+          email: $('#email').val(),
+          url: $('#url').val()
+        };
+        // make a POST request to the server to create a C2E
+        // Replace with your API endpoint URL
+        const apiEndpoint = '/c2e/cee-media';
+        // jQuery ajax to make the POST request to apiEndpoint with the data filed c2eMediaId
+        $.ajax({
+          url: apiEndpoint,
+          type: 'POST',
+          contentType: "application/json",
+          data: JSON.stringify(formData),
+          success: function (data) {
+            const c2eLink = window.location.origin + "/c2e-storage/c2eid-" + data.id + ".c2e";
+            $('#c2eSuccessAlert a').attr('href', c2eLink);
+            $('#c2eSuccessAlert a').attr('target', '_blank');
+            $('#c2eSuccessAlert a span').text("c2eid-" + data.id + ".c2e");
+            $('#c2eSuccessAlert').show();
+          },
+          error: function (error) {
+            alert('Error creating C2E!');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+
+</html>
