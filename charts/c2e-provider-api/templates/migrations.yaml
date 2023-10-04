@@ -18,9 +18,9 @@ spec:
     spec:
       restartPolicy: Never
       volumes:
-        - name: c2e-provider-api
+        - name: c2e-services
           persistentVolumeClaim:
-            claimName: c2e-provider-api
+            claimName: c2e-services
       containers:
         - name: {{.Values.COMMON_NAME}}-db-migrate
           image: {{.Values.image.repository}}
@@ -28,4 +28,4 @@ spec:
           command: ["npm", "run", "migrate"]
           volumeMounts:
             - mountPath: /storage
-              name: c2e-provider-api
+              name: c2e-services

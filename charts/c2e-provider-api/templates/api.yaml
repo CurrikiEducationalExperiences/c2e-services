@@ -30,12 +30,12 @@ spec:
             - containerPort: 3000
           volumeMounts:
             - mountPath: /storage
-              name: c2e-provider-api
+              name: c2e-services
               # subPath: c2e-media-storage
       volumes:
-        - name: c2e-provider-api
+        - name: c2e-services
           persistentVolumeClaim:
-            claimName: c2e-provider-api
+            claimName: c2e-services
 
 ---
 apiVersion: v1
