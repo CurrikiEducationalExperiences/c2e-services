@@ -1,33 +1,81 @@
-import axios from 'axios';
-import FormData from 'form-data';
+import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
+import admzip from 'adm-zip';
+import crypto from 'crypto';
+import {once} from 'events';
 import fs, {ReadStream} from 'node:fs';
-import path from 'path';
+import {AWS_CREDENTIALS, AWS_REGION, AWS_S3_BUCKET, AWS_S3_BUCKET_URL, MASTER_KEY, TEMP_FOLDER} from '../../config';
 import {Cee} from '../../models';
 
 export const protectCee = async (
-  fileReadStream: ReadStream | Boolean,
+  filePath: ReadStream | Boolean,
   ceeRecord: Cee
-): Promise<Boolean> => {
-  const url = 'https://c2e-api.curriki.org/api/v1/c2e/encrypt';
-  const form_data = new FormData();
-  form_data.append("c2e", fileReadStream);
-  const response = await axios.post(url, form_data, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    responseType: 'arraybuffer'
+): Promise<Boolean> => { return true; }
+
+export const encryptCee = async (
+  filePath: string,
+  encryptionKey: string,
+  ceeId: string,
+  keepLocal?: Boolean
+): Promise<any> => {
+  // S3 Init
+  const S3 = new S3Client({ region: AWS_REGION, credentials: AWS_CREDENTIALS });
+  // Decrypt license key
+  const key = decryptLicenseKey(encryptionKey);
+  // Unzipping C2E package
+  const tempFolder = `${TEMP_FOLDER}/${crypto.randomUUID()}`;
+  const zip = new admzip(filePath);
+  zip.extractAllTo(tempFolder, true);
+  const subdir = fs.readdirSync(tempFolder)[0];
+
+  // Packaging the content files
+  const zip2 = new admzip();
+  zip2.addLocalFolder(`${tempFolder}/${subdir}/${subdir}`);
+  zip2.writeZip(`${tempFolder}/${subdir}.c2e.temp`);
+  fs.rmdirSync(`${tempFolder}/${subdir}/${subdir}`, {recursive: true});
+
+  // Ecnrypt the content file
+  const cipher = crypto.createCipher('aes-256-cbc', Buffer.from(key, 'hex'));
+  const input = fs.createReadStream(`${tempFolder}/${subdir}.c2e.temp`);
+  const output = fs.createWriteStream(`${tempFolder}/${subdir}/${subdir}.c2e`);
+  const stream = input.pipe(cipher).pipe(output);
+  await once(stream, 'finish');
+  fs.unlinkSync(`${tempFolder}/${subdir}.c2e.temp`);
+
+  // Repackaging
+  const zip3 = new admzip();
+  zip3.addLocalFolder(`${tempFolder}/${subdir}`, subdir);
+  zip3.writeZip(`${tempFolder}/${ceeId}.c2e`);
+
+  // Save to AWS
+  const content = fs.createReadStream(`${tempFolder}/${ceeId}.c2e`);
+  const putCommand = new PutObjectCommand({
+    Bucket: AWS_S3_BUCKET,
+    Key: `${ceeId}.c2e`,
+    Body: content
   });
+  await S3.send(putCommand);
+  if (keepLocal) {
+    return {
+      bucketUrl: `${AWS_S3_BUCKET_URL}${ceeId}.c2e`,
+      localPath: `${tempFolder}/${ceeId}.c2e`
+    };
+  }
 
-  const headers = response.headers;
-  const contentDisposition = headers['content-disposition'];
+  fs.unlinkSync(`${tempFolder}/${ceeId}.c2e`);
+  return {bucketUrl: `${AWS_S3_BUCKET_URL}${ceeId}.c2e`}
 
-  // Extract the filename from the content disposition header
-  const filenameMatch = /filename="(.+)"/.exec(contentDisposition);
-  const filename = filenameMatch ? filenameMatch[1] : 'downloaded_file';
+}
 
-  // Write the received data to a local file
-  const c2eStoragePath = path.join(__dirname, '../../../public/c2e-storage');
-  const c2ePath = path.join(c2eStoragePath, 'c2eid-' + ceeRecord.id + '.c2e');
-  fs.writeFileSync(c2ePath, response.data, 'binary');
-  return true;
+export const generateLicenseKey = (): string => {
+  const key = crypto.randomBytes(32).toString('hex');
+  const cipher = crypto.createCipher('aes-256-cbc', MASTER_KEY);
+  const encryptedKey = cipher.update(key, 'hex', 'hex') + cipher.final('hex');
+  return encryptedKey;
+}
+
+export const decryptLicenseKey = (key: string): string => {
+  const keyBuffer = Buffer.from(key, 'hex');
+  const decipher = crypto.createDecipher('aes-256-cbc', MASTER_KEY);
+  const decrypted = decipher.update(keyBuffer, undefined, 'hex') + decipher.final('hex');
+  return decrypted;
 }

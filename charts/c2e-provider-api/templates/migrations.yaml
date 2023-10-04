@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Values.COMMON_NAME}}-db-migrate
+  namespace: {{.Values.COMMON_NAME}}
+  annotations:
+    secrets.doppler.com/reload: 'true'
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+  labels:
+    app: {{.Values.COMMON_NAME}}
+spec:
+  template:
+    metadata:
+      labels:
+        name: {{.Values.COMMON_NAME}}-db-migrate
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: c2e-provider-api
+          persistentVolumeClaim:
+            claimName: c2e-provider-api
+      containers:
+        - name: {{.Values.COMMON_NAME}}-db-migrate
+          image: {{.Values.image.repository}}
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          command: ["npm", "run", "migrate"]
+          volumeMounts:
+            - mountPath: /storage
+              name: c2e-provider-api

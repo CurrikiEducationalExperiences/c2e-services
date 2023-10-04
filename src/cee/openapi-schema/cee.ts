@@ -26,12 +26,18 @@ export const ceeCreateByMediaSchema: SchemaObject = {
   }
 };
 
-export const ceeCreateByLicenseKeySchema: SchemaObject = {
+export const ceeCreateByIdSchema: SchemaObject = {
   title: 'Create C2E by License Key',
   type: 'object',
-  required: ['licenseKey'],
+  required: ['ceeId', 'token'],
   properties: {
-    licenseKey: {
+    ceeId: {
+      type: 'string',
+    },
+    decrypt: {
+      type: 'boolean',
+    },
+    token: {
       type: 'string',
     }
   }

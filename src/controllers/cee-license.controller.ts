@@ -26,6 +26,8 @@ import C2eMdCopyrightHolderLd from '../cee/c2e-core/classes/C2eMdCopyrightHolder
 import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
+import {generateLicenseKey} from '../cee/utils';
+import {checkToken} from '../cee/utils/gapi';
 import {CeeLicense} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
 
@@ -36,9 +38,9 @@ class EmailData {
 const ceeLicenseBuyerRequest: SchemaObject = {
   title: 'Request C2E License by Buyer',
   type: 'object',
-  required: ['email'],
+  required: ['token'],
   properties: {
-    email: {
+    token: {
       type: 'string',
     },
   }
@@ -81,22 +83,37 @@ export class CeeLicenseController {
     })
     ceeLicenseRequest: any,
   ): Promise<any> {
+    const tokenResponse = await checkToken(ceeLicenseRequest.token);
+    if (!tokenResponse.email) {
+      throw new Error(tokenResponse.error_description);
+    }
+
     // read email from request
-    const email = ceeLicenseRequest.email;
+    const email = tokenResponse.email;
     // find from ceeLicenseeRepository if licensee by email exists
     const ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
-    // find all ceeLicenseRepository by licenseeId order by createdAt desc
-    const ceeLicenseRecords = await this.ceeLicenseRepository.find({where: {licenseeId: ceeLicenseeRecord?.id}, order: ['createdAt DESC']});
-    // map ceeLicenseRecords to include cee, licensee
-    const ceeLicenseRecordsWithCee = await Promise.all(ceeLicenseRecords.map(async (item: CeeLicense) => {
-      const ceeRecord = item?.ceeId ? await this.ceeRepository.findById(item.ceeId) : null;
-      return {
-        license: item,
-        licensee: ceeLicenseeRecord,
-        cee: {id: ceeRecord?.id, title: ceeRecord?.title, description: ceeRecord?.description}
-      };
-    }));
-    return ceeLicenseRecordsWithCee;
+    if (ceeLicenseeRecord) {
+      // find all ceeLicenseRepository by licenseeId order by createdAt desc
+      const ceeLicenseRecords = await this.ceeLicenseRepository.find({where: {licenseeId: ceeLicenseeRecord?.id}, order: ['createdAt DESC']});
+      // map ceeLicenseRecords to include cee, licensee
+      const ceeLicenseRecordsWithCee = await Promise.all(ceeLicenseRecords.map(async (item: CeeLicense) => {
+        const ceeRecord = item?.ceeId ? await this.ceeRepository.findById(item.ceeId) : null;
+        const manifest = Object.assign(ceeRecord?.manifest ? ceeRecord.manifest : {});
+        return {
+          license: item,
+          licensee: ceeLicenseeRecord,
+          cee: {
+            id: ceeRecord?.id,
+            title: ceeRecord?.title,
+            description: ceeRecord?.description,
+            subjectOf: manifest?.c2eMetadata?.subjectOf?.name
+          }
+        };
+      }));
+      return ceeLicenseRecordsWithCee;
+    } else {
+      return [];
+    }
   }
 
   @post('/c2e-licenses')
@@ -112,11 +129,14 @@ export class CeeLicenseController {
     const lineItems = request.hasOwnProperty('line_items') ? request.line_items : [];
     const billingFirstName = request.hasOwnProperty('billing') && request.billing.hasOwnProperty('first_name') ? request.billing.first_name : null;
     const billingLastName = request.hasOwnProperty('billing') && request.billing.hasOwnProperty('last_name') ? request.billing.last_name : null;
+    const meta_data = request.hasOwnProperty('meta_data') ? request.meta_data : [];
+    const licenseeName = meta_data.find((item: any) => item.key === 'organization_name')?.value;
+    const licenseeEmail = meta_data.find((item: any) => item.key === 'email_address')?.value;
 
     let ok = true;
     let message = '';
 
-    if (!orderKey || !billingEmail || !lineItems || !billingFirstName || !billingLastName) {
+    if (!orderKey || !billingEmail || !lineItems || !billingFirstName || !billingLastName || !licenseeName || !licenseeEmail) {
       // respond with error message with status code 400 object
       // this.response.status(400).send({message: 'Invalid request. Does not found Licensing request object'});
       ok = false;
@@ -145,13 +165,14 @@ export class CeeLicenseController {
         if (ok && item.hasOwnProperty('sku')) {
 
           // find from ceeListingRepository if ceeListing by sku exists
-          let ceeListingRecord = await this.ceeListingRepository.findOne({where: {id: item.sku}});
+          const ceeListingRecord = await this.ceeListingRepository.findOne({where: {id: item.sku}});
           if (!ceeListingRecord) {
             ok = false;
             message = 'Invalid request. Does not found CeeListing object';
           } else {
-            let name = billingFirstName + ' ' + billingLastName;
-            let email = billingEmail;
+            const name = licenseeName;
+            const email = licenseeEmail;
+
             // find from ceeLicenseeRepository if licensee by email exists
             let ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
             if (!ceeLicenseeRecord) {
@@ -160,10 +181,10 @@ export class CeeLicenseController {
             }
 
             const ceeMasterRecord = await this.ceeRepository.findById(ceeListingRecord.ceeMasterId);
-            let manifest = Object.assign(ceeMasterRecord.manifest ? ceeMasterRecord.manifest : {});
-            let license = manifest.c2eMetadata?.copyright?.license;
-            let copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
-            let publisher = manifest.c2eMetadata?.publisher;
+            const manifest = Object.assign(ceeMasterRecord.manifest ? ceeMasterRecord.manifest : {});
+            const license = manifest.c2eMetadata?.copyright?.license;
+            const copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
+            const publisher = manifest.c2eMetadata?.publisher;
 
             const ceeLicensedRecord = await this.ceeRepository.create({
               title: ceeMasterRecord.title,
@@ -171,21 +192,21 @@ export class CeeLicenseController {
               type: 'licensed',
             });
 
-            let licenseType = license?.additionalType ? license.additionalType : '';
-            let licenseKey = 'pending';
-            let licenseTerms = license?.usageInfo?.hasDefinedTerm?.name ? license?.usageInfo?.hasDefinedTerm?.name : '';
-            let licenseDate = license?.dateCreated ? license.dateCreated : new Date().toISOString();
+            const licenseType = license?.additionalType ? license.additionalType : '';
+            const licenseKey = generateLicenseKey();
+            const licenseTerms = license?.usageInfo?.hasDefinedTerm?.name ? license?.usageInfo?.hasDefinedTerm?.name : '';
+            const licenseDate = license?.dateCreated ? license.dateCreated : new Date().toISOString();
 
             // licenseEndDate is 1 and half year from licenseDate
-            let licenseEndDateCurrent = new Date();
+            const licenseEndDateCurrent = new Date();
             licenseEndDateCurrent.setFullYear(licenseEndDateCurrent.getFullYear() + 1);
             licenseEndDateCurrent.setMonth(licenseEndDateCurrent.getMonth() + 6);
 
-            let licenseEndDate = license?.expires ? license.expires : licenseEndDateCurrent.toISOString();
-            let price = license?.offers?.price ? license.offers.price : '0';
+            const licenseEndDate = license?.expires ? license.expires : licenseEndDateCurrent.toISOString();
+            const price = license?.offers?.price ? license.offers.price : '0';
 
             // create new license
-            const ceeLicenseRecord = await this.ceeLicenseRepository.create({
+            await this.ceeLicenseRepository.create({
               licenseKey,
               licenseType,
               licenseTerms,
@@ -196,10 +217,6 @@ export class CeeLicenseController {
               ceeId: ceeLicensedRecord.id,
               orderKey
             });
-
-            licenseKey = 'c2e-lsc-' + ceeLicenseRecord.id;
-            // update ceeLicenseRepository with new licenseKey
-            await this.ceeLicenseRepository.updateById(ceeLicenseRecord.id, {licenseKey});
 
             // Get rescource. ***(Should be replaced with logic to get Midea from Master C2E package)***.
             const ceeMediaCeeRecord = await this.ceeMediaCeeRepository.findOne({where: {ceeId: ceeListingRecord.ceeMasterId}});

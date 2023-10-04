@@ -147,7 +147,7 @@ export class CeeListingController {
     const ceePlayerReader = `https://c2e-reader.curriki.org/preview/?c2e=${encodeURIComponent(ceePreviewStorageUrl)}`;
     const productDescription = `
     <p><a target="_blank" href="${ceePlayerReader}"><strong>Preview C2E</strong></a></p>
-    <p>${ceePreviewRecord.description || ceePreviewRecord.title}</p>
+    <p>${description ? description : ''}</p>
     `;
     ceeProductWcStore.description = productDescription;
     ceeProductWcStore.virtual = true;

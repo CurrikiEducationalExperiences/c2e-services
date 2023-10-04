@@ -20,15 +20,18 @@ import {
   ResponseObject,
   RestBindings
 } from '@loopback/rest';
-import {createReadStream, ReadStream, statSync} from 'fs';
-import path from 'path';
+import crypto from 'crypto';
+import {once} from 'events';
+import {createReadStream, createWriteStream, ReadStream, statSync} from 'fs';
 import C2eLicenseeLd from '../cee/c2e-core/classes/C2eLicenseeLd';
 import C2eMdCopyrightHolderLd from '../cee/c2e-core/classes/C2eMdCopyrightHolderLd';
 import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
-import {ceeCreateByLicenseKeySchema, ceeCreateByMediaSchema} from '../cee/openapi-schema';
-import {protectCee} from '../cee/utils';
+import {ceeCreateByIdSchema, ceeCreateByMediaSchema} from '../cee/openapi-schema';
+import {encryptCee, protectCee} from '../cee/utils';
+import {checkToken} from '../cee/utils/gapi';
+import {TEMP_FOLDER} from '../config';
 import {Cee} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
 
@@ -61,29 +64,37 @@ export class CeeController {
     @requestBody({
       content: {
         'application/json': {
-          schema: ceeCreateByLicenseKeySchema,
+          schema: ceeCreateByIdSchema,
         },
       },
     })
     ceeRequest: any,
     @inject(RestBindings.Http.RESPONSE) response: ResponseObject,
   ): Promise<any> {
-    let fileStream = null;
-    // get license record by license key
-    const ceeLicenseRecord = await this.ceeLicenseRepository.findOne({where: {licenseKey: ceeRequest.licenseKey}});
-    let ceeLicenseeRecord = await this.ceeLicenseeRepository.findById(ceeLicenseRecord?.licenseeId ? ceeLicenseRecord.licenseeId : '');
-    const ceeRecord = await this.ceeRepository.findById(ceeLicenseRecord?.ceeId ? ceeLicenseRecord.ceeId : '');
-    let manifest = Object.assign(ceeRecord.manifest ? ceeRecord.manifest : {});
-    let license = manifest.c2eMetadata?.copyright?.license;
-    let copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
-    let publisher = manifest.c2eMetadata?.publisher;
+    const tokenResponse = await checkToken(ceeRequest.token);
+    if (!tokenResponse.email) {
+      throw new Error(tokenResponse.error_description);
+    }
 
-    let licenseType = license?.additionalType ? license.additionalType : '';
-    let licenseKey = license?.identifier?.value ? license.identifier.value : '';
-    let licenseTerms = license?.usageInfo?.hasDefinedTerm?.name ? license?.usageInfo?.hasDefinedTerm?.name : '';
-    let licenseDate = license?.dateCreated ? license.dateCreated : '';
-    let licenseEndDate = license?.expires ? license.expires : '';
-    let price = license?.offers?.price ? license.offers.price : '0';
+    const ceeRecord = await this.ceeRepository.findById(ceeRequest.ceeId);
+    const ceeLicenseRecord = await this.ceeLicenseRepository.findOne({where: {ceeId: ceeRecord.id}});
+    const ceeLicenseeRecord = await this.ceeLicenseeRepository.findById(ceeLicenseRecord?.licenseeId ? ceeLicenseRecord.licenseeId : '');
+    if (!ceeLicenseeRecord || ceeLicenseeRecord.email !== tokenResponse.email) {
+      throw new Error('Invalid license');
+    }
+
+    let fileStream = null;
+    const manifest = Object.assign(ceeRecord.manifest ? ceeRecord.manifest : {});
+    const license = manifest.c2eMetadata?.copyright?.license;
+    const copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
+    const publisher = manifest.c2eMetadata?.publisher;
+
+    const licenseType = license?.additionalType ? license.additionalType : '';
+    const licenseKey = license?.identifier?.value ? license.identifier.value : '';
+    const licenseTerms = license?.usageInfo?.hasDefinedTerm?.name ? license?.usageInfo?.hasDefinedTerm?.name : '';
+    const licenseDate = license?.dateCreated ? license.dateCreated : '';
+    const licenseEndDate = license?.expires ? license.expires : '';
+    const price = license?.offers?.price ? license.offers.price : '0';
 
     const ceeMediaCeeRecord = await this.ceeMediaCeeRepository.findOne({where: {ceeId: ceeRecord.id}});
     if (ceeMediaCeeRecord) {
@@ -118,26 +129,33 @@ export class CeeController {
       ceeLicensedWriter.setLicenseIdentifier(licenseKey);
       ceeLicensedWriter.setLicenseDateCreated(licenseDate);
       ceeLicensedWriter.setLicenseExpires(licenseEndDate);
-      let ceeFileStream: ReadStream | Boolean = ceeLicensedWriter.write();
-      await protectCee(ceeFileStream, ceeRecord);
+      const ceeFileStream: ReadStream | Boolean = ceeLicensedWriter.write();
+      if (ceeFileStream instanceof ReadStream && ceeLicenseRecord) {
+        const filePath = `${TEMP_FOLDER}/${crypto.randomUUID()}`;
+        const writeStream = createWriteStream(filePath);
+        const stream = ceeFileStream.pipe(writeStream);
+        await once(stream, 'finish');
+        const encryptedCee = await encryptCee(filePath, ceeLicenseRecord.licenseKey, ceeRecord.id, true);
 
-      const c2eStoragePath = path.join(__dirname, '../../public/c2e-storage');
-      const c2ePath = path.join(c2eStoragePath, 'c2eid-' + ceeRecord.id + '.c2e');
+        const responsePath = ceeRequest.decrypt ? filePath : encryptedCee.localPath;
+        // Set headers for file download
+        response.setHeader('Content-Disposition', 'attachment; filename="' + 'c2eid-' + ceeRecord.id + '.c2e' + '"');
+        response.setHeader('Content-Type', 'application/octet-stream'); // You can set the appropriate MIME type
+        response.setHeader('Content-Length', statSync(responsePath).size.toString());
 
-      // Set headers for file download
-      response.setHeader('Content-Disposition', 'attachment; filename="' + 'c2eid-' + ceeRecord.id + '.c2e' + '"');
-      response.setHeader('Content-Type', 'application/octet-stream'); // You can set the appropriate MIME type
-      response.setHeader('Content-Length', statSync(c2ePath).size.toString());
+        // Stream the file to the response
+        fileStream = createReadStream(responsePath);
 
-      // Stream the file to the response
-      fileStream = createReadStream(c2ePath);
-
-      fileStream.on('data', (chunk) => {
-        response.write(chunk, 'binary');
-      });
-      fileStream.on('end', () => {
-        response.end();
-      });
+        fileStream.on('data', (chunk) => {
+          response.write(chunk, 'binary');
+        });
+        fileStream.on('end', () => {
+          response.end();
+        });
+      } else {
+        // throw error
+        return response;
+      }
     }
 
     return response;
@@ -181,7 +199,7 @@ export class CeeController {
       (ceeMediaRecord.identifierType ? ceeMediaRecord.identifierType : '')
     );
 
-    let ceePreviewFileStream: ReadStream | Boolean = ceeWriter.write();
+    const ceePreviewFileStream: ReadStream | Boolean = ceeWriter.write();
     await protectCee(ceePreviewFileStream, ceeRecord);
     return ceeRecord;
   }

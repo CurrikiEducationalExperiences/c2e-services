@@ -2,7 +2,7 @@ import {BootMixin} from '@loopback/boot';
 import {generateUniqueId} from "@loopback/context";
 import {ApplicationConfig} from '@loopback/core';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
-import {RestApplication} from '@loopback/rest';
+import {RestApplication, RestBindings} from '@loopback/rest';
 import {
   RestExplorerBindings,
   RestExplorerComponent,
@@ -20,7 +20,7 @@ export class C2EProvider extends BootMixin(
 ) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
-
+    this.bind(RestBindings.ERROR_WRITER_OPTIONS).to({debug: true});
     // Set up the custom sequence
     this.sequence(MySequence);
 
