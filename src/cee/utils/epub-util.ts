@@ -1,5 +1,6 @@
 import AdmZip from 'adm-zip';
 import * as cheerioLib from 'cheerio';
+import * as fs from 'fs';
 import path from 'path';
 import {CeeMedia} from '../../models';
 import {CeeMediaRepository} from '../../repositories';
@@ -17,9 +18,6 @@ interface NavPoint {
 }
 
 export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMediaId: string, isbn: string): Promise<boolean> => {
-
-  const fs = require('fs');
-  const admzip = require('adm-zip');
   const cheerio = require('cheerio');
 
   const walk = (dir: string, files: Object[] = []) => {
@@ -39,12 +37,13 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
   const publicPath = path.join(__dirname, '../../../public');
   const file = epub;
   // Unzip to temp folder
-  console.log('Unzipping epub');
-  var zip = new admzip(file);
-  zip.extractAllTo(path.join(publicPath, 'temp/tempbook'), true);
+  const zip = new AdmZip(file);
+  const tempBookPath = path.join(publicPath, 'temp/tempbook');
+  zip.extractAllTo(tempBookPath, true);
   // Read through the spine in content.opf
-  const contentFileData = fs.readFileSync(path.join(publicPath, 'temp/tempbook/OPS/content.opf'), 'utf-8');
-  const tocFileData = fs.readFileSync(path.join(publicPath, 'temp/tempbook/OPS/toc.ncx'), 'utf-8');
+  const tocFolder = getTocDirectory(tempBookPath);
+  const contentFileData = fs.readFileSync(`${tempBookPath}/${tocFolder}/content.opf`, 'utf-8');
+  const tocFileData = fs.readFileSync(`${tempBookPath}/${tocFolder}/toc.ncx`, 'utf-8');
   const $content = cheerio.load(contentFileData, {xml: true});
   const $toc = cheerio.load(tocFileData, {xml: true});
 
@@ -57,16 +56,21 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     const $innerContent = cheerio.load(contentFileData, {xml: true});
     const xhtmlFile = $innerContent(`#${idref}`)[0].attribs.href;
     // trace xhtmlFile as "navMap navPoint content src" in toc.ncx
-    const navpointContentTag = $toc(`navMap navPoint content[src="${xhtmlFile}"]`);
+    const navpointContentTag = $toc(`navMap navPoint content[src*="${xhtmlFile}"]`);
+    if (navpointContentTag.length === 0) {
+      console.log(`Unexpected navpoint format or content item not in table of contents`, `idref ${idref}`, `xhtmlFile: ${xhtmlFile}`);
+      return;
+      // throw new Error(`Unexpected navpoint format for ${idref} chapter content. xhtmlFile: ${xhtmlFile}`);
+    }
     // get parent navMap of navpointContentTag
     const xhtmlFileNavMapTag = navpointContentTag.parent();
     const allNavPoints: NavPoint[] = getAllNavPoints($toc, xhtmlFileNavMapTag);
-    let navPointChildXhtmlFiles: Array<string> = [];
+    const navPointChildXhtmlFiles: Array<string> = [];
     allNavPoints.filter((navPoint) => navPoint.src?.indexOf('#') === -1).forEach((navPoint) => navPointChildXhtmlFiles.push((navPoint.src ? navPoint.src : '')));
     // map navPointChildXhtmlFiles to content.opf manifest item href
-    let idrefChildren: Array<string> = navPointChildXhtmlFiles.map((xhtmlFile) => $innerContent(`item[media-type="application/xhtml+xml"][href="${xhtmlFile}"]`)[0]?.attribs?.id);
-    let idrefAll: Array<string> = [idref, ...idrefChildren];
-    let xhtmlFileAll: Array<string> = [xhtmlFile, ...navPointChildXhtmlFiles];
+    const idrefChildren: Array<string> = navPointChildXhtmlFiles.map((xhtmlFile) => $innerContent(`item[media-type="application/xhtml+xml"][href*="${xhtmlFile}"]`)[0]?.attribs?.id);
+    const idrefAll: Array<string> = [idref, ...idrefChildren];
+    const xhtmlFileAll: Array<string> = [xhtmlFile, ...navPointChildXhtmlFiles];
 
     // remove $innerContent itemref[idref] other than idrefAll
     $innerContent('itemref').each((i: any, item: any) => {
@@ -84,27 +88,26 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       }
     });
 
-    fs.writeFileSync(path.join(publicPath, `temp/${idref}/OPS/content.opf`), $innerContent.html());
+    fs.writeFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/content.opf`), $innerContent.html());
 
     // Editing toc.ncx (table of contents)
     const $innerToc = cheerio.load(tocFileData, {xml: true});
-    const navpointContent = $innerToc(`content[src="${xhtmlFile}"]`);
+    const navpointContent = $innerToc(`content[src*="${xhtmlFile}"]`);
     if (navpointContent.length === 0) {
-      console.log(`Unexpected navpoint format for ${idref} chapter.`);
-      return;
+      throw new Error(`Unexpected navpoint format for ${idref} chapter.`);
     }
     const html = $innerToc.html(navpointContent[0].parent); // Getting chapter navpoint
     $innerToc('navPoint').remove(); // Removing all navpoints
     $innerToc(html).appendTo('navMap');
-    fs.writeFileSync(path.join(publicPath, `temp/${idref}/OPS/toc.ncx`), $innerToc.html());
+    fs.writeFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/toc.ncx`), $innerToc.html());
 
     // get first text from html
     const firstText = cheerio.load(html, {xml: true})('text').first().html();
 
     // Delete unused xhtml files and images
-    const allFiles: Array<FileType> = Object.assign(new Array<FileType>(), walk(path.join(publicPath, `temp/${idref}/OPS`)));
+    const allFiles: Array<FileType> = Object.assign(new Array<FileType>(), walk(path.join(publicPath, `temp/${idref}/${tocFolder}`)));
     // const chapterXhtml = fs.readFileSync(path.join(publicPath, `temp/${idref}/OPS/${xhtmlFile}`), 'utf-8');
-    const chaptersXhtml = xhtmlFileAll.map(xhtmlFile => fs.readFileSync(path.join(publicPath, `temp/${idref}/OPS/${xhtmlFile}`), 'utf-8')).join(' ');
+    const chaptersXhtml = xhtmlFileAll.map(xhtmlFile => fs.readFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/${xhtmlFile}`), 'utf-8')).join(' ');
     const removedFiles: Array<FileType> = [];
     for (const file of allFiles) {
 
@@ -122,13 +125,13 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     }
 
     // Repackaging
-    const zip2 = new admzip();
+    const zip2 = new AdmZip();
     zip2.addLocalFile(path.join(publicPath, `temp/${idref}/mimetype`));
     zip2.addLocalFolder(path.join(publicPath, `temp/${idref}/META-INF`), 'META-INF');
-    zip2.addLocalFolder(path.join(publicPath, `temp/${idref}/OPS`), 'OPS');
+    zip2.addLocalFolder(path.join(publicPath, `temp/${idref}/${tocFolder}`), tocFolder);
 
     // read OPS/content.opf file and get html
-    const contentOpf = zip2.getEntries().find((e: any) => e.entryName === 'OPS/content.opf');
+    const contentOpf = zip2.getEntries().find((e: any) => e.entryName === `${tocFolder}/content.opf`);
     // remove <item> tags cotained in <manifest> from contentOpf with respect to href attribute
     const contentOpfHtml = contentOpf?.getData().toString('utf8');
     const $contentOpf = cheerio.load(contentOpfHtml, {xml: true});
@@ -141,7 +144,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     });
 
     // update contentOpf with new html
-    zip2.updateFile('OPS/content.opf', Buffer.from($contentOpf.html(), 'utf8'));
+    zip2.updateFile(`${tocFolder}/content.opf`, Buffer.from($contentOpf.html(), 'utf8'));
 
     const ceeMediaRecord = await ceeMediaRepository.create({
       title: firstText,
@@ -188,16 +191,22 @@ function getAllNavPoints($: cheerioLib.CheerioAPI, element: any): NavPoint[] {
 
 export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: CeeMediaRepository, resource: string, isbn: string): Promise<CeeMedia> => {
   const admZip = new AdmZip(epubPath);
-  var epubEntries = admZip.getEntries(); // an array of ZipEntry records
-  // read OPS/content.opf file and get html
-  const contentOpf = epubEntries.find((e) => e.entryName === 'OPS/content.opf');
-  const contentOpfHtml = contentOpf?.getData().toString('utf8');
+  const epubEntries = admZip.getEntries(); // an array of ZipEntry records
+  // read content.opf file and get html
+
+  const contentOpf = epubEntries.find((e) => e.entryName.toLowerCase() === 'ops/content.opf' || e.entryName.toLowerCase() === 'oebps/content.opf');
+
+  if (!contentOpf) {
+    throw new Error('createEpubCeeMedia: Unsupported epub format');
+  }
+
+  const contentOpfHtml = contentOpf.getData().toString('utf8');
   const cheerio = require('cheerio');
   // load html from contentOpfHtml using cheerio
   const contentOpfHtmlParsed = cheerio.load(contentOpfHtml, {xml: true});
   // get text from dc:title tag from contentOpfHtmlParsed
   const title = contentOpfHtmlParsed('dc\\:title').text();
-  return await ceeMediaRepository.create({
+  return ceeMediaRepository.create({
     title,
     description: title,
     type: 'epub',
@@ -206,3 +215,14 @@ export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: C
     identifier: isbn
   });
 }
+
+const getTocDirectory = (pathName: string) : string => {
+  const validFolders = ['ops', 'OPS', 'oebps', 'OEBPS'];
+  const filenames = fs.readdirSync(pathName);
+
+  for (const folder of validFolders) {
+    if (filenames.indexOf(folder) !== -1) return folder;
+  }
+
+  throw new Error('getTocDirectory: Unsupported epub format');
+};
