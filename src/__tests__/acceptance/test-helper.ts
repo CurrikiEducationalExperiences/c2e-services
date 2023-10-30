@@ -3,7 +3,7 @@ import {
   createRestAppClient,
   givenHttpServerConfig,
 } from '@loopback/testlab';
-import {C2EProvider} from '../..';
+import {C2EServices} from '../..';
 
 export async function setupApplication(): Promise<AppWithClient> {
   const restConfig = givenHttpServerConfig({
@@ -14,7 +14,7 @@ export async function setupApplication(): Promise<AppWithClient> {
     // port: +process.env.PORT,
   });
 
-  const app = new C2EProvider({
+  const app = new C2EServices({
     rest: restConfig,
   });
 
@@ -27,6 +27,6 @@ export async function setupApplication(): Promise<AppWithClient> {
 }
 
 export interface AppWithClient {
-  app: C2EProvider;
+  app: C2EServices;
   client: Client;
 }

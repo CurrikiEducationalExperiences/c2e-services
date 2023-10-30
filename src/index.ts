@@ -1,9 +1,9 @@
-import {ApplicationConfig, C2EProvider} from './application';
+import {ApplicationConfig, C2EServices} from './application';
 
 export * from './application';
 
 export async function main(options: ApplicationConfig = {}) {
-  const app = new C2EProvider(options);
+  const app = new C2EServices(options);
   await app.boot();
   await app.start();
 

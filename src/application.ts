@@ -15,7 +15,7 @@ import {CeeMediaRepository, CeeStoreRepository, CeeWriterRepository} from './rep
 import {MySequence} from './sequence';
 export {ApplicationConfig};
 
-export class C2EProvider extends BootMixin(
+export class C2EServices extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
   constructor(options: ApplicationConfig = {}) {

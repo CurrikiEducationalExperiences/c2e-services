@@ -1,9 +1,9 @@
 import {Client} from '@loopback/testlab';
-import {C2EProvider} from '../..';
+import {C2EServices} from '../..';
 import {setupApplication} from './test-helper';
 
 describe('HomePage', () => {
-  let app: C2EProvider;
+  let app: C2EServices;
   let client: Client;
 
   before('setupApplication', async () => {

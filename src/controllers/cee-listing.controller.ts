@@ -143,7 +143,7 @@ export class CeeListingController {
     ceeProductWcStore.sku = ceeListingRecord.id;
     ceeProductWcStore.name = ceePreviewRecord.title;
     ceeProductWcStore.regular_price = price;
-    const ceePreviewStorageUrl = `https://c2e-provider-api.curriki.org/c2e-storage/c2eid-${ceePreviewRecord.id}.c2e`;
+    const ceePreviewStorageUrl = `https://c2e-services-api.curriki.org/c2e-storage/c2eid-${ceePreviewRecord.id}.c2e`;
     const ceePlayerReader = `https://c2e-reader.curriki.org/preview/?c2e=${encodeURIComponent(ceePreviewStorageUrl)}`;
     const productDescription = `
     <p><a target="_blank" href="${ceePlayerReader}"><strong>Preview C2E</strong></a></p>

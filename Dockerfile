@@ -30,7 +30,7 @@ COPY --chown=node . .
 # ENV db_database=$DB_DATABASE
 
 # RUN sed -i "s/localhost/${DB_HOST}/g" src/config.ts
-# RUN sed -i "s/c2e-provider/${DB_DATABASE}/g" src/config.ts
+# RUN sed -i "s/c2e-services/${DB_DATABASE}/g" src/config.ts
 # RUN sed -i "s/postgres/${DB_USER}/g" src/config.ts
 # RUN sed -i "s/waqar/${DB_PASS}/g" src/config.ts
 
