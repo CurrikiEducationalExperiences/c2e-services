@@ -16,24 +16,34 @@ export class CeeListingRepository extends DefaultCrudRepository<
 
   async listByLicensedMedia() {
     const result = await this.dataSource.execute(`
-      SELECT
-        md.id as media_id,
-        md.title as media_title,
-        md.identifier as isbn,
-        md.resource as media_resource,
-        cee.id as cee_id,
-        cee.type as cee_type,
-        cee.title as cee_title,
-        ceelisting.id as ceelisting_id
-      FROM ceemedia as md
-      LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = md.id
-      LEFT JOIN cee ON cee.id = md_cee.ceeId
-      LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
-      WHERE
-        (md.parentid IS NULL AND md_cee.ceeId IS NULL)
-        OR (md.parentid IS NOT NULL AND md_cee.ceeId IS NOT NULL)
-        AND cee.type = 'licensed'
-      ORDER BY md.createdat ASC
+    WITH RECURSIVE HierarchicalData AS (
+        SELECT id, title, parentid, 1 as level, id::text AS path
+        FROM ceemedia
+        WHERE parentid IS NULL
+
+        UNION ALL
+
+        SELECT t.id, t.title, t.parentid, h.level + 1, h.path || '/' || LPAD(t.id::text, 10, '0')
+        FROM ceemedia t
+        INNER JOIN HierarchicalData h ON t.parentid = h.id
+    )
+    SELECT hd.id, hd.title, hd.parentid, hd.level,
+    cee.id as cee_id,
+    cee.type as cee_type,
+    cee.title as cee_title,
+    ceelisting.id as ceelisting_id,
+    cee_licensed.id as cee_id_licensed,
+    cee_licensed.type as cee_type_licensed,
+    ceelicensee.email as cee_licensee_email
+    FROM HierarchicalData as hd
+    LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
+    LEFT JOIN cee ON cee.id = md_cee.ceeid
+    LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
+    LEFT JOIN ceelicense ON ceelicense.ceelistingid = ceelisting.id
+    LEFT JOIN cee as cee_licensed ON cee_licensed.id = ceelicense.ceeid
+    LEFT JOIN ceelicensee ON ceelicensee.id = ceelicense.licenseeid
+    WHERE hd.level = 1 OR (cee_licensed.type = 'licensed' AND ceelicensee.email = 'waqar@curriki.org')
+    ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id);
     `);
     return result;
   }
@@ -94,7 +104,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
       ceelisting.id as ceelisting_id
       FROM HierarchicalData as hd
       LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
-      LEFT JOIN cee ON cee.id = md_cee.ceeId
+      LEFT JOIN cee ON cee.id = md_cee.ceeid
       LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
       WHERE hd.level = 1 OR cee.type = 'master'
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id);
