@@ -22,7 +22,7 @@ env:
   CONTAINER_IMAGE: c2e-services:${{ github.sha }}
   AWS_ACCOUNT_ID: ${{secrets.AWS_ACCOUNT_ID}}
   EKS_CLUSTER_NAME: ${{secrets.EKS_CLUSTER_NAME}}
-  PROJECT_NAME: c2e
+  PROJECT_NAME: c2e-services
   DB_HOST: ${{secrets.DB_HOST}}
   DB_USER: ${{secrets.DB_USER}}
   DB_DATABASE: ${{secrets.DB_DATABASE}}
