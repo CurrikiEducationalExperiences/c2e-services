@@ -3,7 +3,6 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{.Values.COMMON_NAME}}-db-migrate
-  namespace: {{.Values.COMMON_NAME}}
   annotations:
     secrets.doppler.com/reload: 'true'
     "helm.sh/hook": post-install,post-upgrade

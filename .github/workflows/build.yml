@@ -22,7 +22,7 @@ env:
   CONTAINER_IMAGE: c2e-services:${{ github.sha }}
   AWS_ACCOUNT_ID: ${{secrets.AWS_ACCOUNT_ID}}
   EKS_CLUSTER_NAME: ${{secrets.EKS_CLUSTER_NAME}}
-  PROJECT_NAME: c2e
+  PROJECT_NAME: c2e-services
   DB_HOST: ${{secrets.DB_HOST}}
   DB_USER: ${{secrets.DB_USER}}
   DB_DATABASE: ${{secrets.DB_DATABASE}}
@@ -63,5 +63,5 @@ jobs:
           export DOCKER_IMAGE_NAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE
           aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME}
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-          helm upgrade --namespace c2e-services --install --debug ${PROJECT_NAME} charts/c2e-services \
+          helm upgrade --namespace c2e-prod --install --debug ${PROJECT_NAME} charts/c2e-services \
           --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE
