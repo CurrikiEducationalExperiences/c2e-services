@@ -42,6 +42,15 @@ export class CeeListingController {
     public ceeMediaCeeRepository: CeeMediaCeeRepository
   ) { }
 
+  @get('/c2e-listings/media-to-license')
+  async listingByMediaToLicense(): Promise<any> {
+    return this.ceeListingRepository.listByMediaToLicense();
+  }
+
+  @get('/c2e-listings/media-licensed')
+  async listingByLicensedMedia(): Promise<any> {
+    return this.ceeListingRepository.listByLicensedMedia();
+  }
 
   @post('/c2e-listings/media')
   @response(200, {
