@@ -63,5 +63,5 @@ jobs:
           export DOCKER_IMAGE_NAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE
           aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME}
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-          helm upgrade --namespace c2e-services --install --debug ${PROJECT_NAME} charts/c2e-services \
+          helm upgrade --namespace c2e-prod --install --debug ${PROJECT_NAME} charts/c2e-services \
           --set image.repository=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE
