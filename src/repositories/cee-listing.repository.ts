@@ -14,20 +14,20 @@ export class CeeListingRepository extends DefaultCrudRepository<
     super(CeeListing, dataSource);
   }
 
-  async listByLicensedMedia() {
+  async listByLicensedMedia(email: string) {
     const result = await this.dataSource.execute(`
     WITH RECURSIVE HierarchicalData AS (
-        SELECT id, title, parentid, 1 as level, id::text AS path
+        SELECT id, title, parentid, identifier, identifierType, 1 as level, id::text AS path
         FROM ceemedia
         WHERE parentid IS NULL
 
         UNION ALL
 
-        SELECT t.id, t.title, t.parentid, h.level + 1, h.path || '/' || LPAD(t.id::text, 10, '0')
+        SELECT t.id, t.title, t.parentid, t.identifier, t.identifierType, h.level + 1, h.path || '/' || LPAD(t.id::text, 10, '0')
         FROM ceemedia t
         INNER JOIN HierarchicalData h ON t.parentid = h.id
     )
-    SELECT hd.id, hd.title, hd.parentid, hd.level,
+    SELECT hd.id, hd.title, hd.parentid, hd.identifier, hd.identifierType, hd.level,
     cee.id as cee_id,
     cee.type as cee_type,
     cee.title as cee_title,
@@ -42,10 +42,22 @@ export class CeeListingRepository extends DefaultCrudRepository<
     LEFT JOIN ceelicense ON ceelicense.ceelistingid = ceelisting.id
     LEFT JOIN cee as cee_licensed ON cee_licensed.id = ceelicense.ceeid
     LEFT JOIN ceelicensee ON ceelicensee.id = ceelicense.licenseeid
-    WHERE hd.level = 1 OR (cee_licensed.type = 'licensed' AND ceelicensee.email = 'waqar@curriki.org')
+    WHERE hd.level = 1 OR (cee_licensed.type = 'licensed' AND ceelicensee.email = '${email}')
     ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id);
     `);
-    return result;
+
+    // filter out level 1 media that does not have children with respect to parentid
+    const filtered = result.filter((item: any) => {
+      if (item.level === 1) {
+        const children = result.filter((child: any) => {
+          return child.parentid === item.id;
+        });
+        return children.length > 0;
+      }
+      return true;
+    });
+
+    return filtered;
   }
 
   async listByMediaToLicense() {

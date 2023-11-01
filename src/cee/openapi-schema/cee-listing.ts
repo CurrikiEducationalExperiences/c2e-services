@@ -8,6 +8,12 @@ export const ceeListByLicensedMedia: SchemaObject = {
     ceeLicenseeEmail: {
       type: 'string',
     },
+    ceeListingIds: {
+      type: 'array',
+      items: {
+        type: 'string',
+      }
+    },
   }
 }
 

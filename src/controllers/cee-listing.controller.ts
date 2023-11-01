@@ -20,7 +20,7 @@ import C2eMdCopyrightHolderLd from '../cee/c2e-core/classes/C2eMdCopyrightHolder
 import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
-import {ceeListByMediaRequest} from '../cee/openapi-schema';
+import {ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
 import {protectCee} from '../cee/utils';
 import {listToStore} from '../cee/utils/list-cee';
 import {CeeListing, CeeProductWcStore} from '../models';
@@ -47,9 +47,20 @@ export class CeeListingController {
     return this.ceeListingRepository.listByMediaToLicense();
   }
 
-  @get('/c2e-listings/media-licensed')
-  async listingByLicensedMedia(): Promise<any> {
-    return this.ceeListingRepository.listByLicensedMedia();
+  @post('/c2e-listings/media-licensed')
+  async listingByLicensedMedia(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: ceeListByLicensedMedia,
+        },
+      },
+    })
+    ceeListByMediaRequest: any
+  ): Promise<any> {
+    console.log('>>>>>>>*** ', ceeListByMediaRequest);
+
+    return this.ceeListingRepository.listByLicensedMedia(ceeListByMediaRequest.ceeLicenseeEmail);
   }
 
   @post('/c2e-listings/media')
