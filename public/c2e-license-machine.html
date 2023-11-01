@@ -94,7 +94,7 @@
   <!-- Bootstrap JS -->
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script>
-    const host = 'http://localhost:3000';
+    const host = '.';
     // Upload EPUB file to the server
     function initFetchLicneses() {
       $('#fetchLicneses').click(function (e) {
@@ -143,58 +143,6 @@
           cardBody.find('tbody').append(row);
         });
 
-      });
-    }
-
-    function initAccordionCollapseX() {
-      // accordion collapse event to load child items (C2E media)
-      $('#accordion').on('show.bs.collapse', function (e) {
-        const target = $(e.target);
-        const collapseId = target.attr('id');
-        const parentId = collapseId.replace('collapse', '');
-
-        // Replace with your API endpoint URLs
-        apiEndpoint = host + '/c2e-media';
-
-        // apiEndpoint Open API filter parameters
-        const filter = {
-          where: {
-            parentId: parentId
-          }
-        };
-
-        // js code to make the filter parameter a query string
-        apiEndpoint += '?filter=' + JSON.stringify(filter);
-
-        // Fetch data using jQuery's AJAX
-        $.get(apiEndpoint, function (data) {
-          const cardBody = target.find('.card-body');
-          const table = `
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Title</th>
-                                        <th>Download</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        `;
-
-          cardBody.html(table);
-
-          data.forEach(item => {
-            const row = `
-                            <tr>
-                                <td>${item.title}</td>
-                                <td><a target="__blank" href="${host + '/c2e-media-storage/' + item.resource}" class="btn btn-success"><i class="fas fa-download"></i> Download</a></td>
-                            </tr>
-                        `;
-
-            cardBody.find('tbody').append(row);
-          });
-        });
       });
     }
 
