@@ -22,19 +22,25 @@
       C2E Licenses</button>
   </div>
 
+
   <div class="container mt-5">
     <!-- back button with icon -->
     <div class="rounded p-4 mb-4 bg-light">
-      <h2>Licnesed C2Es</h2>
+      <h2>Setup C2E Licenses</h2>
 
       <div class="form-group">
         <div class="row">
           <div class="col col-md-4">
-            <label for="ebookUpload">Licnesee Email:</label>
-            <input type="text" class="form-control-file" id="email" name="email" required>
+            <label for="ebookUpload"><strong><u>Step-1</u></strong> C2E Listing IDs / SKUs (Woocommerce):</label>
+            <textarea id="c2elistingids" name="c2elistingids" style="width: 300px;height: 100px;"></textarea>
           </div>
-          <div class="col col-md-4 text-end" style="text-align: center; padding-top: 15px;">
-            <button id="fetchLicneses" type="button" class="btn btn-primary">Load Licnesned C2Es</button>
+          <div class="col col-md-4">
+            <label for="ebookUpload"><strong><u>Step-2</u></strong> Enter Licnesee Email:</label>
+            <input type="email" class="form-control-file" id="email" name="email" required>
+          </div>
+          <div class="col col-md-4">
+            <label for="ebookUpload"><strong><u>Step-3</u></strong></label> <br />
+            <button id="fetchLicneses" type="button" class="btn btn-primary">Load C2Es</button>
           </div>
         </div>
       </div>
@@ -165,7 +171,7 @@
       };
       // make a POST request to the server to create a C2E
       // Replace with your API endpoint URL
-      const apiEndpoint = host + '/c2e-listings/media-licensed';
+      const apiEndpoint = host + '/c2e-listings/media-to-license';
       // jQuery ajax to make the POST request to apiEndpoint with the data filed c2eMediaId
       $.ajax({
         url: apiEndpoint,
