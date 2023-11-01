@@ -75,6 +75,10 @@ export class CeeListingRepository extends DefaultCrudRepository<
       return "'" + id + "'";
     }).join(',');
 
+    let queryLicensedMediaIds = ``;
+    if (licensedMediaIds.length > 0) {
+      queryLicensedMediaIds += `AND (hd.id NOT IN (${licensedMediaIdsStr}))`;
+    }
 
     /*
     const listing_ids: Array<string> = [
@@ -111,7 +115,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
       LEFT JOIN cee ON cee.id = md_cee.ceeid
       LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
       WHERE (hd.level = 1 OR cee.type = 'master')
-      AND (hd.id NOT IN (${licensedMediaIdsStr}))
+      ${queryLicensedMediaIds}
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
     `;
 

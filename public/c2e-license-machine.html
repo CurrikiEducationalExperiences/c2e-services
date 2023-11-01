@@ -12,16 +12,6 @@
 </head>
 
 <body>
-
-  <div class="container mt-5">
-    <!-- link button to c2e-license-machine.html -->
-    <button type="button" class="btn btn-primary" onclick="window.location.href='c2e-license-machine.html'">See Licnesed
-      C2Es</button>
-    <button type="button" class="btn btn-primary"
-      onclick="window.location.href='c2e-license-machine-automate.html'">Setup
-      C2E Licenses</button>
-  </div>
-
   <div class="container mt-5">
     <!-- back button with icon -->
     <div class="rounded p-4 mb-4 bg-light">
@@ -30,11 +20,17 @@
       <div class="form-group">
         <div class="row">
           <div class="col col-md-4">
-            <label for="ebookUpload">Licnesee Email:</label>
+            <label for="ebookUpload"><strong><u>Step-1</u></strong> Enter Licnesee Email:</label>
             <input type="text" class="form-control-file" id="email" name="email" required>
           </div>
-          <div class="col col-md-4 text-end" style="text-align: center; padding-top: 15px;">
-            <button id="fetchLicneses" type="button" class="btn btn-primary">Load Licnesned C2Es</button>
+          <div class="col col-md-3">
+            <label for="ebookUpload"><strong><u>Step-2</u></strong></label> <br />
+            <button id="fetchLicneses" type="button" class="btn btn-primary">Review Licnesned C2Es</button>
+          </div>
+          <div class="col col-md-3">
+            <label for="ebookUpload"><strong><u>Step-3</u></strong></label> <br />
+            <button type="button" id="setup_btn" class="btn btn-primary">Setup
+              C2E Licenses<span id="email_span"></span></button>
           </div>
         </div>
       </div>
@@ -42,7 +38,7 @@
     </div>
 
     <div id="license_not_found" style="display: none;">
-      <div class="alert alert-danger" role="alert">
+      <div class="alert alert-warning" role="alert">
         <h4 class="alert-heading">No Licnesed C2Es Found!</h4>
         <p>There are no licnesed C2Es found for the given email address.</p>
         <hr>
@@ -106,6 +102,12 @@
 
         initLoadC2eMedia(email);
         initAccordionCollapse();
+      });
+
+      $('#setup_btn').click(function (e) {
+        const email = $('#email').val();
+        const q = email === '' ? '' : '?email=' + email;
+        window.location.href = 'c2e-license-machine-automate.html' + q;
       });
     }
 
@@ -175,6 +177,12 @@
         success: function (data) {
           $('#license_not_found').hide();
           if (data.length === 0) {
+            if (email === '') {
+              $('#email_span').text("");
+            } else {
+              $('#email_span').text(" for " + email);
+            }
+
             $('#license_not_found').show();
           }
           window.licensedData = data;
@@ -216,7 +224,7 @@
           });
         },
         error: function (error) {
-          alert('Error creating C2E!');
+          alert('Error!');
         }
       });
 

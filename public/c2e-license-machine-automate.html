@@ -15,11 +15,8 @@
 
   <div class="container mt-5">
     <!-- link button to c2e-license-machine.html -->
-    <button type="button" class="btn btn-primary" onclick="window.location.href='c2e-license-machine.html'">See Licnesed
-      C2Es</button>
-    <button type="button" class="btn btn-primary"
-      onclick="window.location.href='c2e-license-machine-automate.html'">Setup
-      C2E Licenses</button>
+    <button type="button" class="btn btn-primary" onclick="window.location.href='c2e-license-machine.html'">
+      Back</button>
   </div>
 
 
@@ -31,16 +28,12 @@
       <div class="form-group">
         <div class="row">
           <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-1</u></strong> C2E Listing IDs / SKUs (Woocommerce):</label>
-            <textarea id="c2elistingids" name="c2elistingids" style="width: 300px;height: 100px;"></textarea>
-          </div>
-          <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-2</u></strong> Enter Licnesee Email:</label>
+            <label for="ebookUpload"><strong><u>Step-4</u></strong> Licnesee Email:</label>
             <input type="email" class="form-control-file" id="email" name="email" required>
           </div>
           <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-3</u></strong></label> <br />
-            <button id="fetchLicneses" type="button" class="btn btn-primary">Load C2Es</button>
+            <label for="ebookUpload"><strong><u>Step-5</u></strong></label> <br />
+            <button id="fetchListings" type="button" class="btn btn-primary">Review C2E Listings</button>
           </div>
         </div>
       </div>
@@ -48,7 +41,7 @@
     </div>
 
     <div id="license_not_found" style="display: none;">
-      <div class="alert alert-danger" role="alert">
+      <div class="alert alert-warning" role="alert">
         <h4 class="alert-heading">No Licnesed C2Es Found!</h4>
         <p>There are no licnesed C2Es found for the given email address.</p>
         <hr>
@@ -105,13 +98,26 @@
   <script>
     const host = '.';
     // Upload EPUB file to the server
-    function initFetchLicneses() {
-      $('#fetchLicneses').click(function (e) {
+    function initFetchListings() {
+      var queryString = window.location.search;
+      var urlParams = new URLSearchParams(queryString);
+      // Get specific parameters
+      var email_param = urlParams.get('email');
+      if (email_param) {
+        $('#email').val(email_param);
+      }
+
+      $('#fetchListings').click(function (e) {
         e.preventDefault();
         const email = $('#email').val();
 
-        initLoadC2eMedia(email);
-        initAccordionCollapse();
+        if (email.trim() === '') {
+          alert('Please enter a valid email address.');
+        } else {
+          initLoadC2eMedia(email);
+          initAccordionCollapse();
+        }
+
       });
     }
 
@@ -145,7 +151,7 @@
         data.forEach(item => {
           const row = `
                           <tr>
-                              <td>${item.title}</td>
+                              <td>${item.title} <br /><small>Listing ID / SKU : ${item.ceelisting_id}</small></td>
                           </tr>
                       `;
 
@@ -222,7 +228,7 @@
           });
         },
         error: function (error) {
-          alert('Error creating C2E!');
+          alert('Error!');
         }
       });
 
@@ -239,7 +245,7 @@
     }
 
     $(document).ready(function () {
-      initFetchLicneses();
+      initFetchListings();
     });
   </script>
 </body>
