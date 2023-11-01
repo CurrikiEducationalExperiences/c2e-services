@@ -46,9 +46,9 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
   const tocFileData = fs.readFileSync(`${tempBookPath}/${tocFolder}/toc.ncx`, 'utf-8');
   const $content = cheerio.load(contentFileData, {xml: true});
   const $toc = cheerio.load(tocFileData, {xml: true});
+  const idrefArray = $content('itemref').get().map((item:any) => { return item.attribs.idref; });
 
-  $content('itemref').each(async (i: any, item: any) => {
-    const idref = item?.attribs?.idref;
+  for (const idref of idrefArray) {
     // Create new copy
     zip.extractAllTo(path.join(publicPath, `temp/${idref}`), true);
 
@@ -59,7 +59,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     const navpointContentTag = $toc(`navMap navPoint content[src*="${xhtmlFile}"]`);
     if (navpointContentTag.length === 0) {
       console.log(`Unexpected navpoint format or content item not in table of contents`, `idref ${idref}`, `xhtmlFile: ${xhtmlFile}`);
-      return;
+      continue;
       // throw new Error(`Unexpected navpoint format for ${idref} chapter content. xhtmlFile: ${xhtmlFile}`);
     }
     // get parent navMap of navpointContentTag
@@ -109,18 +109,18 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     // const chapterXhtml = fs.readFileSync(path.join(publicPath, `temp/${idref}/OPS/${xhtmlFile}`), 'utf-8');
     const chaptersXhtml = xhtmlFileAll.map(xhtmlFile => fs.readFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/${xhtmlFile}`), 'utf-8')).join(' ');
     const removedFiles: Array<FileType> = [];
-    for (const file of allFiles) {
+    for (const contentFile of allFiles) {
 
-      if (file.filename.indexOf('.xhtml') !== -1 && xhtmlFileAll.indexOf(file.filename) === -1) {
-        fs.unlinkSync(file.path);
-        removedFiles.push(file);
+      if (contentFile.filename.indexOf('.xhtml') !== -1 && xhtmlFileAll.indexOf(contentFile.filename) === -1) {
+        fs.unlinkSync(contentFile.path);
+        removedFiles.push(contentFile);
       }
 
       // make isMedia const for if statement by checking file.filename.indexOf for following file extensions: .jpg .jpeg .png .gif .svg  .mp3 .ogg .mp4 .webm
-      const isMedia = file.filename.indexOf('.jpg') !== -1 || file.filename.indexOf('.jpeg') !== -1 || file.filename.indexOf('.png') !== -1 || file.filename.indexOf('.gif') !== -1 || file.filename.indexOf('.svg') !== -1 || file.filename.indexOf('.mp3') !== -1 || file.filename.indexOf('.ogg') !== -1 || file.filename.indexOf('.mp4') !== -1 || file.filename.indexOf('.webm') !== -1;
-      if (isMedia && chaptersXhtml.indexOf(file.filename) === -1) {
-        fs.unlinkSync(file.path);
-        removedFiles.push(file);
+      const isMedia = contentFile.filename.indexOf('.jpg') !== -1 || contentFile.filename.indexOf('.jpeg') !== -1 || contentFile.filename.indexOf('.png') !== -1 || contentFile.filename.indexOf('.gif') !== -1 || contentFile.filename.indexOf('.svg') !== -1 || contentFile.filename.indexOf('.mp3') !== -1 || contentFile.filename.indexOf('.ogg') !== -1 || contentFile.filename.indexOf('.mp4') !== -1 || contentFile.filename.indexOf('.webm') !== -1;
+      if (isMedia && contentFile.filename.indexOf('cover') === -1 && chaptersXhtml.indexOf(contentFile.filename) === -1) {
+        fs.unlinkSync(contentFile.path);
+        removedFiles.push(contentFile);
       }
     }
 
@@ -156,9 +156,16 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       identifier: isbn
     });
     const epubFile = idref + '-' + ceeMediaRecord.id + '.epub';
-    await ceeMediaRepository.updateById(ceeMediaRecord.id, {resource: epubFile});
     zip2.writeZip(path.join(publicPath, `c2e-media-storage/${epubFile}`));
-  });
+    // copy cover fie
+    const thumbnailPath = getThumbnailPath(path.join(publicPath, `temp/${idref}/${tocFolder}`));
+    const thumbnailFile = idref + '-' + ceeMediaRecord.id + '_thumbnail.'+thumbnailPath.split('.')[1];
+    fs.copyFileSync(thumbnailPath, path.join(publicPath, `c2e-media-storage/${thumbnailFile}`));
+    await ceeMediaRepository.updateById(ceeMediaRecord.id, {
+      resource: epubFile,
+      thumbnail: thumbnailFile
+    });
+  };
 
   // Cleanup
   fs.rmSync(path.join(publicPath, 'temp'), {recursive: true, maxRetries: 10});
@@ -225,4 +232,14 @@ const getTocDirectory = (pathName: string) : string => {
   }
 
   throw new Error('getTocDirectory: Unsupported epub format');
+};
+
+const getThumbnailPath = (tocFolderPath: string) : string => {
+  const filenames = fs.readdirSync(`${tocFolderPath}/images`);
+
+  for (const file of filenames) {
+    if (file.indexOf('cover.') !== -1) return `${tocFolderPath}/images/${file}`;
+  }
+
+  throw new Error('getTocDirectory: Unsupported epub format. No cover found.');
 };
