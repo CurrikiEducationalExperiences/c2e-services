@@ -60,7 +60,23 @@ export class CeeListingRepository extends DefaultCrudRepository<
     return filtered;
   }
 
-  async listByMediaToLicense() {
+  async listByMediaToLicense(email: string) {
+    const licensedMedia = await this.listByLicensedMedia(email);
+    // filter media that are part of the Book
+    const licensedMediaCees = licensedMedia.filter((item: any) => {
+      return item.level !== 1;
+    });
+
+    const licensedMediaIds = licensedMediaCees.map((item: any) => {
+      return item.id;
+    });
+
+    const licensedMediaIdsStr = licensedMediaIds.map((id: string) => {
+      return "'" + id + "'";
+    }).join(',');
+
+
+    /*
     const listing_ids: Array<string> = [
       'dae62080-5b75-11ee-a229-4180943df2b8',
       'd306a280-5b76-11ee-88ff-a5179564b636',
@@ -71,45 +87,21 @@ export class CeeListingRepository extends DefaultCrudRepository<
     ];
 
     const listing_ids_str = listing_ids.map(id => "'" + id + "'").join(',');
-    /*
-    const result = await this.dataSource.execute(`
-    SELECT
-      md.id as media_id,
-      md.title as media_title,
-      md.identifier as isbn,
-      md.resource as media_resource,
-      cee.id as cee_id,
-      cee.type as cee_type,
-      cee.title as cee_title,
-      ceelisting.id as ceelisting_id
-    FROM ceemedia as md
-    LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = md.id
-    LEFT JOIN cee ON cee.id = md_cee.ceeId
-    LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
-    WHERE
-      (md.parentid IS NULL AND md_cee.ceeId IS NULL)
-      OR (md.parentid IS NOT NULL AND md_cee.ceeId IS NOT NULL)
-      AND cee.type = 'master'
-      AND ceelisting.id IN (
-        ` + listing_ids_str + `
-      )
-    ORDER BY md.createdat ASC
-
-    `);
     */
-    const result = await this.dataSource.execute(`
+
+    const query = `
       WITH RECURSIVE HierarchicalData AS (
-        SELECT id, title, parentid, 1 as level, id::text AS path
-        FROM ceemedia
-        WHERE parentid IS NULL
+          SELECT id, title, parentid, identifier, identifierType, 1 as level, id::text AS path
+          FROM ceemedia
+          WHERE parentid IS NULL
 
-        UNION ALL
+          UNION ALL
 
-        SELECT t.id, t.title, t.parentid, h.level + 1, h.path || '/' || LPAD(t.id::text, 10, '0')
-        FROM ceemedia t
-        INNER JOIN HierarchicalData h ON t.parentid = h.id
+          SELECT t.id, t.title, t.parentid, t.identifier, t.identifierType, h.level + 1, h.path || '/' || LPAD(t.id::text, 10, '0')
+          FROM ceemedia t
+          INNER JOIN HierarchicalData h ON t.parentid = h.id
       )
-      SELECT hd.id, hd.title, hd.parentid, hd.level,
+      SELECT hd.id, hd.title, hd.parentid, hd.identifier, hd.identifierType, hd.level,
       cee.id as cee_id,
       cee.type as cee_type,
       cee.title as cee_title,
@@ -118,9 +110,24 @@ export class CeeListingRepository extends DefaultCrudRepository<
       LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
       LEFT JOIN cee ON cee.id = md_cee.ceeid
       LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
-      WHERE hd.level = 1 OR cee.type = 'master'
-      ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id);
-    `);
-    return result;
+      WHERE (hd.level = 1 OR cee.type = 'master')
+      AND (hd.id NOT IN (${licensedMediaIdsStr}))
+      ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
+    `;
+
+    const result = await this.dataSource.execute(query);
+
+    // filter out level 1 media that does not have children with respect to parentid
+    const filtered = result.filter((item: any) => {
+      if (item.level === 1) {
+        const children = result.filter((child: any) => {
+          return child.parentid === item.id;
+        });
+        return children.length > 0;
+      }
+      return true;
+    });
+
+    return filtered;
   }
 }

@@ -42,9 +42,18 @@ export class CeeListingController {
     public ceeMediaCeeRepository: CeeMediaCeeRepository
   ) { }
 
-  @get('/c2e-listings/media-to-license')
-  async listingByMediaToLicense(): Promise<any> {
-    return this.ceeListingRepository.listByMediaToLicense();
+  @post('/c2e-listings/media-to-license')
+  async listingByMediaToLicense(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: ceeListByLicensedMedia,
+        },
+      },
+    })
+    ceeListByMediaRequest: any
+  ): Promise<any> {
+    return this.ceeListingRepository.listByMediaToLicense(ceeListByMediaRequest.ceeLicenseeEmail);
   }
 
   @post('/c2e-listings/media-licensed')
@@ -58,8 +67,6 @@ export class CeeListingController {
     })
     ceeListByMediaRequest: any
   ): Promise<any> {
-    console.log('>>>>>>>*** ', ceeListByMediaRequest);
-
     return this.ceeListingRepository.listByLicensedMedia(ceeListByMediaRequest.ceeLicenseeEmail);
   }
 
