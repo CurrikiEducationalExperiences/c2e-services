@@ -135,6 +135,16 @@ export class CeeListingRepository extends DefaultCrudRepository<
         return this.listingIdsToInclude().includes(item.ceelisting_id);
       }
       */
+      // handle duplicate c2e listings
+      if (item.level > 1) {
+        const result_filtered_duplicate_titles = result.filter((child: any) => {
+          return child.parentid === item.id && child.title === item.title;
+        });
+
+        if (result_filtered_duplicate_titles.length > 1) {
+          return this.listingIdsToInclude().includes(item.ceelisting_id);
+        }
+      }
 
       return true;
     });
