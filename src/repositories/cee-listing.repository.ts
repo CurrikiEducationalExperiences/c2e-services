@@ -311,7 +311,6 @@ export class CeeListingRepository extends DefaultCrudRepository<
       "b7f62ce0-67a6-11ee-bd32-6134433c312a",
       "91fc09b0-67a6-11ee-bd32-6134433c312a",
       "17993620-679c-11ee-bd32-6134433c312a",
-
       "fa9aaa20-5de8-11ee-a917-39dd9c573fbe",
       "eafe8a50-5de8-11ee-a917-39dd9c573fbe",
       "daee7300-5de8-11ee-a917-39dd9c573fbe",
@@ -329,7 +328,6 @@ export class CeeListingRepository extends DefaultCrudRepository<
       "31874c40-5d63-11ee-a917-39dd9c573fbe",
       "e3fa1660-5d62-11ee-a917-39dd9c573fbe",
       "b4fcd230-5d62-11ee-a917-39dd9c573fbe",
-
       "2e10d370-6785-11ee-b2fe-d74fc1d80a28",
       "1fef93d0-6785-11ee-b2fe-d74fc1d80a28",
       "110f7100-6785-11ee-b2fe-d74fc1d80a28",
@@ -361,6 +359,22 @@ export class CeeListingRepository extends DefaultCrudRepository<
       "19bc4690-6783-11ee-b2fe-d74fc1d80a28",
       "0ea33de0-6783-11ee-b2fe-d74fc1d80a28",
       "1f28e640-6776-11ee-b6ed-1931e19377e6",
+      "cd2209b0-5e62-11ee-af0c-cf999a695297",
+      "c3613e00-5e62-11ee-af0c-cf999a695297",
+      "b43b3890-5e62-11ee-af0c-cf999a695297",
+      "a89a3b30-5e62-11ee-af0c-cf999a695297",
+      "99b66ee0-5e62-11ee-af0c-cf999a695297",
+      "8faade90-5e62-11ee-af0c-cf999a695297",
+      "8167e620-5e62-11ee-af0c-cf999a695297",
+      "75e32350-5e62-11ee-af0c-cf999a695297",
+      "6bec5380-5e62-11ee-af0c-cf999a695297",
+      "60fc2f90-5e62-11ee-af0c-cf999a695297",
+      "555342f0-5e62-11ee-af0c-cf999a695297",
+      "49e849b0-5e62-11ee-af0c-cf999a695297",
+      "01f9ad10-5e62-11ee-af0c-cf999a695297",
+      "f0b24e40-5e61-11ee-af0c-cf999a695297",
+      "d5733540-5e61-11ee-af0c-cf999a695297",
+      "cac8a5d0-5e61-11ee-af0c-cf999a695297",
 
     ];
     return adrenalineSKUs;
