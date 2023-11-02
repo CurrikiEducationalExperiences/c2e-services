@@ -138,7 +138,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
       // handle duplicate c2e listings
       if (item.level > 1) {
         // find more titles
-        const result_filtered_more_titles = result.filter((record: any) => {
+        const result_filtered_more_titles = filtered.filter((record: any) => {
           return record.title.trim() === item.title.trim();
         });
 
