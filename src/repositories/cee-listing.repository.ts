@@ -311,6 +311,25 @@ export class CeeListingRepository extends DefaultCrudRepository<
       "b7f62ce0-67a6-11ee-bd32-6134433c312a",
       "91fc09b0-67a6-11ee-bd32-6134433c312a",
       "17993620-679c-11ee-bd32-6134433c312a",
+
+      "fa9aaa20-5de8-11ee-a917-39dd9c573fbe",
+      "eafe8a50-5de8-11ee-a917-39dd9c573fbe",
+      "daee7300-5de8-11ee-a917-39dd9c573fbe",
+      "7d5e6c40-5de8-11ee-a917-39dd9c573fbe",
+      "408e5690-5de8-11ee-a917-39dd9c573fbe",
+      "0ee2bb40-5de8-11ee-a917-39dd9c573fbe",
+      "deee31b0-5dda-11ee-a917-39dd9c573fbe",
+      "95ed61c0-5dda-11ee-a917-39dd9c573fbe",
+      "3e33cd20-5dda-11ee-a917-39dd9c573fbe",
+      "18697ae0-5d8a-11ee-a917-39dd9c573fbe",
+      "97eba690-5d89-11ee-a917-39dd9c573fbe",
+      "a5412d60-5d6b-11ee-a917-39dd9c573fbe",
+      "421bd900-5d67-11ee-a917-39dd9c573fbe",
+      "0ea086c0-5d67-11ee-a917-39dd9c573fbe",
+      "31874c40-5d63-11ee-a917-39dd9c573fbe",
+      "e3fa1660-5d62-11ee-a917-39dd9c573fbe",
+      "b4fcd230-5d62-11ee-a917-39dd9c573fbe",
+
     ];
     return adrenalineSKUs;
   }
