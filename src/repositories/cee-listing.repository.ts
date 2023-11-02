@@ -135,18 +135,18 @@ export class CeeListingRepository extends DefaultCrudRepository<
 
     const filteredForDuplicates = filtered.filter((item: any) => {
       let ok = true;
-      // handle duplicate c2e listings
+
       if (item.level > 1) {
-        // find more titles
-        const result_filtered_more_titles = filtered.filter((record: any) => {
-          return record.title.trim() === item.title.trim();
+        // check in const 'filtered' dataset that item.title exists more than once
+        const filteredItems = filtered.filter((child: any) => {
+          return child.title === item.title;
         });
 
-        if (result_filtered_more_titles.length > 1) {
-          let listIdRecoreds = result_filtered_more_titles.filter((record: any) => {
-            return this.listingIdsToInclude().includes(record.ceelisting_id);
+        if (filteredItems.length > 1) {
+          const filteredItemsData = filteredItems.find((child: any) => {
+            return this.listingIdsToInclude().includes(child.ceelisting_id);
           });
-          ok = listIdRecoreds.length > 0 ? true : false;
+          ok = filteredItemsData ? true : false;
         }
       }
 
