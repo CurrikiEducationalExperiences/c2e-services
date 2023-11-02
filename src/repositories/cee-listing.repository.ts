@@ -130,9 +130,11 @@ export class CeeListingRepository extends DefaultCrudRepository<
         return children.length > 0;
       }
 
+      /*
       if (item.level > 1) {
         return this.listingIdsToInclude().includes(item.ceelisting_id);
       }
+      */
 
       return true;
     });
