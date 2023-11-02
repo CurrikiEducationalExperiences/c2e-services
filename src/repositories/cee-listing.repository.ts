@@ -80,6 +80,10 @@ export class CeeListingRepository extends DefaultCrudRepository<
       queryLicensedMediaIds += `AND (hd.id NOT IN (${licensedMediaIdsStr}))`;
     }
 
+    let queryExcludedListingIds = ``;
+    if (this.listingIdsToExclude().length > 0) {
+      queryExcludedListingIds += `AND (ceelisting.id NOT IN ('${this.listingIdsToExclude().join("','")}'))`;
+    }
     /*
     const listing_ids: Array<string> = [
       'dae62080-5b75-11ee-a229-4180943df2b8',
@@ -114,7 +118,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
       LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
       LEFT JOIN cee ON cee.id = md_cee.ceeid
       LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
-      WHERE (hd.level = 1 OR cee.type = 'master')
+      WHERE (hd.level = 1 OR cee.type = 'master' ${queryExcludedListingIds})
       ${queryLicensedMediaIds}
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
     `;
@@ -133,28 +137,24 @@ export class CeeListingRepository extends DefaultCrudRepository<
       return true;
     });
 
-    const filteredForDuplicates = filtered.filter((item: any) => {
-      let ok = true;
+    return filtered;
+  }
 
-
-      // check in const 'filtered' dataset that item.title exists more than once.
-      const filteredItems = filtered.filter((child: any) => {
-        return child.title === item.title && child.id === item.parentid;
-      });
-
-      if (filteredItems.length > 1) {
-        const filteredItemsData = filteredItems.find((child: any) => {
-          return this.listingIdsToInclude().includes(child.ceelisting_id);
-        });
-        ok = filteredItemsData ? true : false;
-      }
-
-
-      return ok;
-    });
-
-    //return filtered;
-    return filteredForDuplicates;
+  listingIdsToExclude(): Array<string> {
+    return [
+      "1c525300-6c1e-11ee-bd32-6134433c312a",
+      "0318e570-6836-11ee-bd32-6134433c312a",
+      "0e1899c0-6836-11ee-bd32-6134433c312a",
+      "1e994d30-6836-11ee-bd32-6134433c312a",
+      "2dc8a170-6836-11ee-bd32-6134433c312a",
+      "011da230-67a8-11ee-bd32-6134433c312a",
+      "3788f300-67a9-11ee-bd32-6134433c312a",
+      "850cda10-67a9-11ee-bd32-6134433c312a",
+      "dd1be380-628c-11ee-a024-07b4071482ce",
+      "8ed52900-6289-11ee-a024-07b4071482ce",
+      "71645100-628b-11ee-a024-07b4071482ce",
+      "bbdf3dd0-628b-11ee-a024-07b4071482ce",
+    ]
   }
 
   listingIdsToInclude(): Array<string> {
