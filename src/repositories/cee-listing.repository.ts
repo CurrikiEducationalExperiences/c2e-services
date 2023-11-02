@@ -131,6 +131,10 @@ export class CeeListingRepository extends DefaultCrudRepository<
 
   listingIdsToExclude(): Array<string> {
     return [
+      "9b0b60b0-62b9-11ee-a024-07b4071482ce",
+      "9dfa5a30-6280-11ee-a024-07b4071482ce",
+      "e2709d10-71e3-11ee-bd32-6134433c312a",
+      "1db02390-6281-11ee-a024-07b4071482ce",
       "1c525300-6c1e-11ee-bd32-6134433c312a",
       "0318e570-6836-11ee-bd32-6134433c312a",
       "0e1899c0-6836-11ee-bd32-6134433c312a",
