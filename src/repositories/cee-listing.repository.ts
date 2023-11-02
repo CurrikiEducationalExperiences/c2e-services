@@ -145,10 +145,10 @@ export class CeeListingRepository extends DefaultCrudRepository<
         });
 
         if (result_filtered_more_titles.length > 1) {
-          const listIdRecored = result_filtered_more_titles.find((record: any) => {
+          let listIdRecoreds = result_filtered_more_titles.filter((record: any) => {
             return this.listingIdsToInclude().includes(record.ceelisting_id);
           });
-          ok = listIdRecored ? true : false;
+          ok = listIdRecoreds.length > 0 ? true : false;
         }
         return ok;
       }
