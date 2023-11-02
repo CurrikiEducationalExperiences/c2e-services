@@ -130,15 +130,13 @@ export class CeeListingRepository extends DefaultCrudRepository<
         return children.length > 0;
       }
 
-      /*
-      if (item.level > 1) {
-        return this.listingIdsToInclude().includes(item.ceelisting_id);
-      }
-      */
+      return true;
+    });
 
+    const filteredForDuplicates = filtered.filter((item: any) => {
+      let ok = true;
       // handle duplicate c2e listings
       if (item.level > 1) {
-        let ok = true;
         // find more titles
         const result_filtered_more_titles = result.filter((record: any) => {
           return record.title.trim() === item.title.trim();
@@ -150,13 +148,13 @@ export class CeeListingRepository extends DefaultCrudRepository<
           });
           ok = listIdRecoreds.length > 0 ? true : false;
         }
-        return ok;
       }
 
-      return true;
+      return ok;
     });
 
-    return filtered;
+    //return filtered;
+    return filteredForDuplicates;
   }
 
   listingIdsToInclude(): Array<string> {
