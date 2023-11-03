@@ -28,6 +28,7 @@ env:
   DB_USER: ${{secrets.DB_USER}}
   DB_DATABASE: ${{secrets.DB_DATABASE}}
   DB_PASS: ${{secrets.DB_PASS}}
+  CONFIG_JS: ${{secrets.CONFIG_JS}}
 
 jobs:
   build-and-push:
@@ -45,6 +46,7 @@ jobs:
       - name: Build and tag the image
         run: |
           # Build and tag the image
+          echo "$CONFIG_JS" > src/config.ts
           docker build \
             -t $CONTAINER_IMAGE \
             -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE \

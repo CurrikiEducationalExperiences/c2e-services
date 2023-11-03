@@ -18,21 +18,21 @@ RUN npm install
 
 # Bundle app source code
 COPY --chown=node . .
-COPY ./src/config-sample.ts src/config.ts
+# COPY ./src/config-sample.ts src/config.ts
 
-ARG DB_HOST
-ARG DB_USER
-ARG DB_PASS
-ARG DB_DATABASE
-ENV db_host=$DB_HOST
-ENV db_user=$DB_USER
-ENV db_pass=$DB_PASS
-ENV db_database=$DB_DATABASE
+# ARG DB_HOST
+# ARG DB_USER
+# ARG DB_PASS
+# ARG DB_DATABASE
+# ENV db_host=$DB_HOST
+# ENV db_user=$DB_USER
+# ENV db_pass=$DB_PASS
+# ENV db_database=$DB_DATABASE
 
-RUN sed -i "s/localhost/${DB_HOST}/g" src/config.ts
-RUN sed -i "s/c2e-services/${DB_DATABASE}/g" src/config.ts
-RUN sed -i "s/postgres/${DB_USER}/g" src/config.ts
-RUN sed -i "s/waqar/${DB_PASS}/g" src/config.ts
+# RUN sed -i "s/localhost/${DB_HOST}/g" src/config.ts
+# RUN sed -i "s/c2e-services/${DB_DATABASE}/g" src/config.ts
+# RUN sed -i "s/postgres/${DB_USER}/g" src/config.ts
+# RUN sed -i "s/waqar/${DB_PASS}/g" src/config.ts
 
 RUN npm run build
 
