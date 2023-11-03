@@ -46,7 +46,14 @@ jobs:
       - name: Build and tag the image
         run: |
           # Build and tag the image
-          echo "$CONFIG_JS" > src/config.ts
+
+          if [ ${{ github.ref }} = 'refs/heads/develop' ]; then
+            echo "$CONFIG_DEV_JS" > src/config.ts
+          elif [ ${{ github.ref }} = 'refs/heads/main' ]; then
+            echo "$CONFIG_JS" > src/config.ts
+          else
+            echo "No specific config."
+          fi
           docker build \
             -t $CONTAINER_IMAGE \
             -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$CONTAINER_IMAGE \
