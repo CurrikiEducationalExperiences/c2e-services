@@ -1,5 +1,22 @@
 import {SchemaObject} from '@loopback/rest';
 
+export const ceeListByLicensedMedia: SchemaObject = {
+  title: 'List C2E by Licnesed Media',
+  type: 'object',
+  required: ['ceeLicenseeEmail', 'ceeListingIds'],
+  properties: {
+    ceeLicenseeEmail: {
+      type: 'string',
+    },
+    ceeListingIds: {
+      type: 'array',
+      items: {
+        type: 'string',
+      }
+    },
+  }
+}
+
 export const ceeListByMediaRequest: SchemaObject = {
   title: 'List C2E by Media ID',
   type: 'object',

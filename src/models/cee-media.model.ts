@@ -68,6 +68,12 @@ export class CeeMedia extends Entity {
   })
   identifier?: string;
 
+  //thumbnail property with null default value
+  @property({
+    type: 'string'
+  })
+  thumbnail?: string;
+
   constructor(data?: Partial<CeeMedia>) {
     super(data);
   }

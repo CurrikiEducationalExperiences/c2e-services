@@ -1,5 +1,5 @@
 import {ApplicationConfig} from '@loopback/core';
-import {C2EProvider} from './application';
+import {C2EServices} from './application';
 
 /**
  * Export the OpenAPI spec from the application
@@ -12,7 +12,7 @@ async function exportOpenApiSpec(): Promise<void> {
     },
   };
   const outFile = process.argv[2] ?? '';
-  const app = new C2EProvider(config);
+  const app = new C2EServices(config);
   await app.boot();
   await app.exportOpenApiSpec(outFile);
 }

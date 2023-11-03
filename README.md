@@ -19,7 +19,7 @@ npm ci
 ```
 
 
-## C2E Provider API local environment settings
+## C2E Services API local environment settings
 1. Rename `src/config-sample.ts` as `src/config.ts`.
 2. `src/config.ts` for configuration.
 3. Run build and migrat command
@@ -36,7 +36,7 @@ You can also run `node .` to skip the build step.
 Open http://127.0.0.1:3000 in your browser.
 
 
-## C2E Provider API Deoployment
+## C2E Services API Deoployment
 1. Rename `src/config-sample.ts` as `src/config.ts`.
 2. Set follwing environment variables before deploying:
 

@@ -20,7 +20,7 @@ import C2eMdCopyrightHolderLd from '../cee/c2e-core/classes/C2eMdCopyrightHolder
 import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
-import {ceeListByMediaRequest} from '../cee/openapi-schema';
+import {ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
 import {protectCee} from '../cee/utils';
 import {listToStore} from '../cee/utils/list-cee';
 import {CeeListing, CeeProductWcStore} from '../models';
@@ -42,6 +42,33 @@ export class CeeListingController {
     public ceeMediaCeeRepository: CeeMediaCeeRepository
   ) { }
 
+  @post('/c2e-listings/media-to-license')
+  async listingByMediaToLicense(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: ceeListByLicensedMedia,
+        },
+      },
+    })
+    ceeListByMediaRequest: any
+  ): Promise<any> {
+    return this.ceeListingRepository.listByMediaToLicense(ceeListByMediaRequest.ceeLicenseeEmail);
+  }
+
+  @post('/c2e-listings/media-licensed')
+  async listingByLicensedMedia(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: ceeListByLicensedMedia,
+        },
+      },
+    })
+    ceeListByMediaRequest: any
+  ): Promise<any> {
+    return this.ceeListingRepository.listByLicensedMedia(ceeListByMediaRequest.ceeLicenseeEmail);
+  }
 
   @post('/c2e-listings/media')
   @response(200, {
@@ -143,7 +170,7 @@ export class CeeListingController {
     ceeProductWcStore.sku = ceeListingRecord.id;
     ceeProductWcStore.name = ceePreviewRecord.title;
     ceeProductWcStore.regular_price = price;
-    const ceePreviewStorageUrl = `https://c2e-provider-api.curriki.org/c2e-storage/c2eid-${ceePreviewRecord.id}.c2e`;
+    const ceePreviewStorageUrl = `https://c2e-services-api.curriki.org/c2e-storage/c2eid-${ceePreviewRecord.id}.c2e`;
     const ceePlayerReader = `https://c2e-reader.curriki.org/preview/?c2e=${encodeURIComponent(ceePreviewStorageUrl)}`;
     const productDescription = `
     <p><a target="_blank" href="${ceePlayerReader}"><strong>Preview C2E</strong></a></p>
