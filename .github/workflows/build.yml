@@ -29,6 +29,7 @@ env:
   DB_DATABASE: ${{secrets.DB_DATABASE}}
   DB_PASS: ${{secrets.DB_PASS}}
   CONFIG_JS: ${{secrets.CONFIG_JS}}
+  CONFIG_DEV_JS: ${{secrets.CONFIG_DEV_JS}}
 
 jobs:
   build-and-push:
