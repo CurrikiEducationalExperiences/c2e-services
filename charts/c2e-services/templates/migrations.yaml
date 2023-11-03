@@ -19,7 +19,7 @@ spec:
       volumes:
         - name: c2e-services
           persistentVolumeClaim:
-            claimName: c2e-services
+            claimName: {{.Values.storageClaimName}}
       containers:
         - name: {{.Values.COMMON_NAME}}-db-migrate
           image: {{.Values.image.repository}}

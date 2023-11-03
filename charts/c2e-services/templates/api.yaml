@@ -34,7 +34,7 @@ spec:
       volumes:
         - name: c2e-services
           persistentVolumeClaim:
-            claimName: c2e-services
+            claimName: {{.Values.storageClaimName}}
 
 ---
 apiVersion: v1
