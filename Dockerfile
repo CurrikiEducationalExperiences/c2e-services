@@ -34,6 +34,7 @@ COPY --chown=node . .
 # RUN sed -i "s/postgres/${DB_USER}/g" src/config.ts
 # RUN sed -i "s/waqar/${DB_PASS}/g" src/config.ts
 
+
 RUN npm run build
 
 # Bind to all network interfaces so that it can be mapped to the host OS
