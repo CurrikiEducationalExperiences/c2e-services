@@ -1,0 +1,2 @@
+storageClaimName: c2e-services-dev
+storageCommand: rm -rf /home/node/app/public/c2e-media-storage && rm -rf  /home/node/app/public/c2e-storage && ln -s /storage/c2e-storage-dev /home/node/app/public/c2e-storage && ln -s /storage/c2e-media-storage-dev /home/node/app/public/c2e-media-storage && node .

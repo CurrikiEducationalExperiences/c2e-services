@@ -19,10 +19,7 @@ spec:
           command:
             - sh
             - -c
-            - rm -rf /home/node/app/public/c2e-media-storage && rm -rf  /home/node/app/public/c2e-storage
-              && ln -s /storage/c2e-storage /home/node/app/public/c2e-storage && ln -s
-              /storage/c2e-media-storage /home/node/app/public/c2e-media-storage && node
-              .
+            - {{.Values.storageCommand}}
           image: {{.Values.image.repository}}
           imagePullPolicy: {{.Values.image.pullPolicy}}
           ports:
@@ -34,7 +31,7 @@ spec:
       volumes:
         - name: c2e-services
           persistentVolumeClaim:
-            claimName: c2e-services
+            claimName: {{.Values.storageClaimName}}
 
 ---
 apiVersion: v1
