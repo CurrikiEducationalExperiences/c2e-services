@@ -42,3 +42,18 @@ export const ceeCreateByIdSchema: SchemaObject = {
     }
   }
 };
+
+
+export const ceeLicenseBatchRequestSchema: SchemaObject = {
+  title: 'Create C2E License Batch',
+  type: 'object',
+  required: ['licenseeEmail', 'licenseeName'],
+  properties: {
+    licenseeEmail: {
+      type: 'string',
+    },
+    licenseeName: {
+      type: 'string',
+    }
+  }
+};
