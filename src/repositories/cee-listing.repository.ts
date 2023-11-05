@@ -34,7 +34,11 @@ export class CeeListingRepository extends DefaultCrudRepository<
     ceelisting.id as ceelisting_id,
     cee_licensed.id as cee_id_licensed,
     cee_licensed.type as cee_type_licensed,
-    ceelicensee.email as cee_licensee_email
+    ceelicensee.email as cee_licensee_email,
+    ceelicense.id as ceelicense_id,
+    cee.manifest->'c2eMetadata'->'copyright'->'license'->'usageInfo' as ceelicense_usage,
+    cee.manifest->'c2eMetadata'->'copyright'->'license'->>'additionalType' as ceelicense_type,
+    cee.manifest->'c2eMetadata'->'copyright'->'license'->'offers'->>'price' as price
     FROM HierarchicalData as hd
     LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
     LEFT JOIN cee ON cee.id = md_cee.ceeid
@@ -102,7 +106,10 @@ export class CeeListingRepository extends DefaultCrudRepository<
       cee.id as cee_id,
       cee.type as cee_type,
       cee.title as cee_title,
-      ceelisting.id as ceelisting_id
+      ceelisting.id as ceelisting_id,
+      cee.manifest->'c2eMetadata'->'copyright'->'license'->'usageInfo' as ceelicense_usage,
+      cee.manifest->'c2eMetadata'->'copyright'->'license'->>'additionalType' as ceelicense_type,
+      cee.manifest->'c2eMetadata'->'copyright'->'license'->'offers'->>'price' as price
       FROM HierarchicalData as hd
       LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
       LEFT JOIN cee ON cee.id = md_cee.ceeid
@@ -110,12 +117,13 @@ export class CeeListingRepository extends DefaultCrudRepository<
       WHERE (hd.level = 1 OR cee.type = 'master' ${queryExcludedListingIds})
       ${queryLicensedMediaIds}
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
+      LIMIT 2
     `;
 
     const result = await this.dataSource.execute(query);
 
     // filter out level 1 media that does not have children with respect to parentid
-    const filtered = result.filter((item: any) => {
+    const filtered: Array<any> = result.filter((item: any) => {
       if (item.level === 1) {
         const children = result.filter((child: any) => {
           return child.parentid === item.id;

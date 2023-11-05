@@ -27,13 +27,21 @@
 
       <div class="form-group">
         <div class="row">
-          <div class="col col-md-4">
+          <div class="col col-md-3">
             <label for="ebookUpload"><strong><u>Step-4</u></strong> Licnesee Email:</label>
             <input type="email" class="form-control-file" id="email" name="email" required>
           </div>
-          <div class="col col-md-4">
+          <div class="col col-md-3">
             <label for="ebookUpload"><strong><u>Step-5</u></strong></label> <br />
             <button id="fetchListings" type="button" class="btn btn-primary">Review C2E Listings</button>
+          </div>
+          <div class="col col-md-3">
+            <label for="licenseeName"><strong><u>Step-6</u></strong> Organization Name</label> <br />
+            <input type="text" class="form-control-file" id="licenseeName" name="licenseeName" required>
+          </div>
+          <div class="col col-md-3">
+            <label for="ebookUpload"><strong><u>Step-7</u></strong></label> <br />
+            <button id="runC2eLicenseBatch" type="button" class="btn btn-primary">RUN C2Es LICENSE BATCH</button>
           </div>
         </div>
       </div>
@@ -117,8 +125,21 @@
           initLoadC2eMedia(email);
           initAccordionCollapse();
         }
-
       });
+
+      $('#runC2eLicenseBatch').click(function (e) {
+        e.preventDefault();
+        const email = $('#email').val();
+        const licenseeName = $('#licenseeName').val();
+
+        if (email.trim() === '' || licenseeName.trim() === '') {
+          alert('Please enter a valid EMAIL / ORGANIZATION NAME.');
+        } else {
+          runC2eLicenseBatch(email, licenseeName);
+        }
+      });
+
+
     }
 
 
@@ -149,9 +170,18 @@
 
         let data = window.licensedData.filter(item => item.parentid === parentId);
         data.forEach(item => {
+          let license_terms = item.ceelicense_usage !== null && item.ceelicense_usage.hasOwnProperty('hasDefinedTerm') ? item.ceelicense_usage.hasDefinedTerm.name : '---';
+          let licensetype = item.ceelicense_type !== null ? item.ceelicense_type : '----';
+          let price = item.price !== null ? item.price : '----';
           const row = `
                           <tr>
-                              <td>${item.title} <br /><small>Listing ID / SKU : ${item.ceelisting_id}</small></td>
+                              <td>
+                                <u>${item.title}</u>
+                                <br /><small>Listing ID / SKU : ${item.ceelisting_id}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Usage Type : ${licensetype}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Usage Terms : ${license_terms}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Price : ${price}</small>
+                              </td>
                           </tr>
                       `;
 
@@ -167,6 +197,24 @@
     }
 
     // Fetch data and populate the accordion and tables
+    function runC2eLicenseBatch(licenseeEmail, licenseeName) {
+      const formData = { licenseeEmail, licenseeName };
+      const apiEndpoint = host + '/c2e-licenses/batch';
+      // jQuery ajax to make the POST request to apiEndpoint with the data filed c2eMediaId
+      $.ajax({
+        url: apiEndpoint,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(formData),
+        success: function (data) {
+          alert('Batch Request Success!');
+        },
+        error: function (error) {
+          alert('Error on Batch Request!');
+        }
+      });
+    }
+
     function initLoadC2eMedia(email) {
 
       emptyAccordion();

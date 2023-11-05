@@ -139,9 +139,18 @@
 
         let data = window.licensedData.filter(item => item.parentid === parentId);
         data.forEach(item => {
+          let license_terms = item.ceelicense_usage !== null && item.ceelicense_usage.hasOwnProperty('hasDefinedTerm') ? item.ceelicense_usage.hasDefinedTerm.name : '---';
+          let licensetype = item.ceelicense_type !== null ? item.ceelicense_type : '----';
+          let price = item.price !== null ? item.price : '----';
           const row = `
                           <tr>
-                              <td>${item.title} <br /><small>Listing ID / SKU : ${item.ceelisting_id}</small></td>
+                              <td>
+                                <u>${item.title}</u>
+                                <br /><small>Listing ID / SKU : ${item.ceelisting_id}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Usage Type : ${licensetype}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Usage Terms : ${license_terms}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Price : ${price}</small>
+                              </td>
                           </tr>
                       `;
 
