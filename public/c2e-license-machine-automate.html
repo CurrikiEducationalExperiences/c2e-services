@@ -15,11 +15,8 @@
 
   <div class="container mt-5">
     <!-- link button to c2e-license-machine.html -->
-    <button type="button" class="btn btn-primary" onclick="window.location.href='c2e-license-machine.html'">See Licnesed
-      C2Es</button>
-    <button type="button" class="btn btn-primary"
-      onclick="window.location.href='c2e-license-machine-automate.html'">Setup
-      C2E Licenses</button>
+    <button type="button" class="btn btn-primary" onclick="window.location.href='c2e-license-machine.html'">
+      Back</button>
   </div>
 
 
@@ -30,17 +27,21 @@
 
       <div class="form-group">
         <div class="row">
-          <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-1</u></strong> C2E Listing IDs / SKUs (Woocommerce):</label>
-            <textarea id="c2elistingids" name="c2elistingids" style="width: 300px;height: 100px;"></textarea>
-          </div>
-          <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-2</u></strong> Enter Licnesee Email:</label>
+          <div class="col col-md-3">
+            <label for="ebookUpload"><strong><u>Step-4</u></strong> Licnesee Email:</label>
             <input type="email" class="form-control-file" id="email" name="email" required>
           </div>
-          <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-3</u></strong></label> <br />
-            <button id="fetchLicneses" type="button" class="btn btn-primary">Load C2Es</button>
+          <div class="col col-md-3">
+            <label for="ebookUpload"><strong><u>Step-5</u></strong></label> <br />
+            <button id="fetchListings" type="button" class="btn btn-primary">Review C2E Listings</button>
+          </div>
+          <div class="col col-md-3">
+            <label for="licenseeName"><strong><u>Step-6</u></strong> Organization Name</label> <br />
+            <input type="text" class="form-control-file" id="licenseeName" name="licenseeName" required>
+          </div>
+          <div class="col col-md-3">
+            <label for="ebookUpload"><strong><u>Step-7</u></strong></label> <br />
+            <button id="runC2eLicenseBatch" type="button" class="btn btn-primary">RUN C2Es LICENSE BATCH</button>
           </div>
         </div>
       </div>
@@ -48,11 +49,9 @@
     </div>
 
     <div id="license_not_found" style="display: none;">
-      <div class="alert alert-danger" role="alert">
-        <h4 class="alert-heading">No Licnesed C2Es Found!</h4>
-        <p>There are no licnesed C2Es found for the given email address.</p>
-        <hr>
-        <p class="mb-0">Please enter a valid email address.</p>
+      <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">No Listings found!</h4>
+        <p>No listings found to licnese C2Es.</p>
       </div>
     </div>
 
@@ -105,14 +104,40 @@
   <script>
     const host = '.';
     // Upload EPUB file to the server
-    function initFetchLicneses() {
-      $('#fetchLicneses').click(function (e) {
+    function initFetchListings() {
+      var queryString = window.location.search;
+      var urlParams = new URLSearchParams(queryString);
+      // Get specific parameters
+      var email_param = urlParams.get('email');
+      if (email_param) {
+        $('#email').val(email_param);
+      }
+
+      $('#fetchListings').click(function (e) {
         e.preventDefault();
         const email = $('#email').val();
 
-        initLoadC2eMedia(email);
-        initAccordionCollapse();
+        if (email.trim() === '') {
+          alert('Please enter a valid email address.');
+        } else {
+          initLoadC2eMedia(email);
+          initAccordionCollapse();
+        }
       });
+
+      $('#runC2eLicenseBatch').click(function (e) {
+        e.preventDefault();
+        const email = $('#email').val();
+        const licenseeName = $('#licenseeName').val();
+
+        if (email.trim() === '' || licenseeName.trim() === '') {
+          alert('Please enter a valid EMAIL / ORGANIZATION NAME.');
+        } else {
+          runC2eLicenseBatch(email, licenseeName);
+        }
+      });
+
+
     }
 
 
@@ -143,9 +168,18 @@
 
         let data = window.licensedData.filter(item => item.parentid === parentId);
         data.forEach(item => {
+          let license_terms = item.ceelicense_usage !== null && item.ceelicense_usage.hasOwnProperty('hasDefinedTerm') ? item.ceelicense_usage.hasDefinedTerm.name : '---';
+          let licensetype = item.ceelicense_type !== null ? item.ceelicense_type : '----';
+          let price = item.price !== null ? item.price : '----';
           const row = `
                           <tr>
-                              <td>${item.title}</td>
+                              <td>
+                                <u>${item.title}</u>
+                                <br /><small>Listing ID / SKU : ${item.ceelisting_id}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Usage Type : ${licensetype}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Usage Terms : ${license_terms}</small>
+                                &nbsp;<strong>|</strong>&nbsp;<small>Price : ${price}</small>
+                              </td>
                           </tr>
                       `;
 
@@ -161,6 +195,24 @@
     }
 
     // Fetch data and populate the accordion and tables
+    function runC2eLicenseBatch(licenseeEmail, licenseeName) {
+      const formData = { licenseeEmail, licenseeName };
+      const apiEndpoint = host + '/c2e-licenses/batch';
+      // jQuery ajax to make the POST request to apiEndpoint with the data filed c2eMediaId
+      $.ajax({
+        url: apiEndpoint,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(formData),
+        success: function (data) {
+          alert('Batch Request Success!');
+        },
+        error: function (error) {
+          alert('Error on Batch Request!');
+        }
+      });
+    }
+
     function initLoadC2eMedia(email) {
 
       emptyAccordion();
@@ -222,7 +274,7 @@
           });
         },
         error: function (error) {
-          alert('Error creating C2E!');
+          alert('Error!');
         }
       });
 
@@ -239,7 +291,7 @@
     }
 
     $(document).ready(function () {
-      initFetchLicneses();
+      initFetchListings();
     });
   </script>
 </body>

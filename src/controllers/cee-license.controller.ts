@@ -21,12 +21,14 @@ import {
   RestBindings,
   SchemaObject
 } from '@loopback/rest';
+import crypto from 'crypto';
 import C2eLicenseeLd from '../cee/c2e-core/classes/C2eLicenseeLd';
 import C2eMdCopyrightHolderLd from '../cee/c2e-core/classes/C2eMdCopyrightHolderLd';
 import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
-import {generateLicenseKey} from '../cee/utils';
+import {ceeLicenseBatchRequestSchema} from '../cee/openapi-schema';
+import {generateLicenseKey, licneseCee} from '../cee/utils';
 import {checkToken} from '../cee/utils/gapi';
 import {CeeLicense} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
@@ -67,6 +69,46 @@ export class CeeLicenseController {
     public ceeRepository: CeeRepository,
     @inject(RestBindings.Http.RESPONSE) private response: Response
   ) { }
+
+
+  @post('/c2e-licenses/batch')
+  @response(200, {
+    description: 'CeeLicense model instance',
+    content: {'application/json': {schema: getModelSchemaRef(CeeLicense)}},
+  })
+  async createBatch(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: ceeLicenseBatchRequestSchema
+        },
+      },
+    })
+    ceeLicenseBatchRequest: any,
+  ): Promise<any> {
+    const licenseeEmail = ceeLicenseBatchRequest.licenseeEmail;
+    const licenseeName = ceeLicenseBatchRequest.licenseeName;
+    const orderKey = crypto.randomBytes(16).toString('hex');
+    const ceeListingsToLicense = await this.ceeListingRepository.listByMediaToLicense(licenseeEmail);
+    const ceesMasterListingsToLicense = ceeListingsToLicense.filter(x => x.level > 1);
+
+    ceesMasterListingsToLicense.forEach(async (ceeMaster: any) => {
+      licneseCee(
+        licenseeEmail,
+        licenseeName,
+        ceeMaster.ceelisting_id,
+        orderKey,
+        this.ceeListingRepository,
+        this.ceeLicenseeRepository,
+        this.ceeRepository,
+        this.ceeLicenseRepository,
+        this.ceeMediaCeeRepository,
+        this.ceeMediaRepository
+      );
+    });
+
+    return {message: 'Licenses Created Successfully'};
+  }
 
   @post('/c2e-licenses/buyer')
   @response(200, {
