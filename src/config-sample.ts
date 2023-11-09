@@ -13,3 +13,4 @@ export const AWS_S3_BUCKET = "";
 export const AWS_S3_BUCKET_URL = "";
 export const MASTER_KEY = "";
 export const TEMP_FOLDER = "";
+export const OPENAI_KEY = "";

@@ -1,9 +1,12 @@
 import AdmZip from 'adm-zip';
 import * as cheerioLib from 'cheerio';
 import * as fs from 'fs';
+import OpenAI from 'openai';
 import path from 'path';
+import {OPENAI_KEY} from '../../config';
 import {CeeMedia} from '../../models';
 import {CeeMediaRepository} from '../../repositories';
+const cheerio = require('cheerio');
 
 interface FileType {
   filename: string,
@@ -17,8 +20,9 @@ interface NavPoint {
   children?: NavPoint[];
 }
 
+const publicPath = path.join(__dirname, '../../../public');
+
 export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMediaId: string, isbn: string): Promise<boolean> => {
-  const cheerio = require('cheerio');
 
   const walk = (dir: string, files: Object[] = []) => {
     const dirFiles = fs.readdirSync(dir)
@@ -243,3 +247,90 @@ const getThumbnailPath = (tocFolderPath: string) : string => {
 
   throw new Error('getTocDirectory: Unsupported epub format. No cover found.');
 };
+
+export const generateEpubDescription = async (epubPath: string): Promise<string>=> {
+  const tempId = "id" + Math.random().toString(16).slice(2);
+  const fullEpubPath = `${publicPath}/c2e-media-storage/${epubPath}`;
+  const tempBookPath = `${publicPath}/temp/${tempId}`;
+
+  if (!fs.existsSync(fullEpubPath)) return `ENOFILE File doesn't exist: ${fullEpubPath}`;
+  // Unzip to temp folder
+  const zip = new AdmZip(fullEpubPath);
+  zip.extractAllTo(tempBookPath, true);
+  // Get title, table of contents
+  const tocDir = `${tempBookPath}/${getTocDirectory(tempBookPath)}`;
+  const title = getTitle(tocDir);
+  const toc = getTableOfContents(tocDir);
+  // Loop through list of files and get text until we reach context limit
+  const filenames = fs.readdirSync(tocDir);
+  const maxContextChars = 2500;
+  let content = '';
+
+  for (const filename of filenames) {
+    if (content.length >= maxContextChars) break;
+    if (filename.indexOf('xhtml') === -1) continue;
+
+    const fileContent = getFirstPages(`${tocDir}/${filename}`);
+    content += fileContent.substring(0, maxContextChars - content.length);
+  }
+
+  // Generate description
+  const systemPrompt = 'You are a librarian. You will receive some text from a book including the ' +
+    'title, table of contents and some sample text from the contents of the book.' +
+    'You will respond with with a short description of the content of the chapter.' +
+    'Dont provide any commentary, just the description. ' +
+    'Limit your responses to 30 words maximum, this is very important.';
+  const promptText = `Title: ${title} Table of Contents: ${toc.toString()} Book Contents: ${content}`;
+  const openai = new OpenAI({
+    apiKey: OPENAI_KEY
+  });
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {"role": "system", "content": systemPrompt},
+      {"role": "user", "content": promptText}
+    ]
+  });
+
+  if (response.usage) {
+    const promptCost = (response.usage.prompt_tokens * 0.03) / 1000;
+    const respCost = (response.usage.completion_tokens * 0.06) / 1000;
+  }
+
+  // Clean up
+  fs.rmSync(tempBookPath, {recursive: true, maxRetries: 10});
+
+  return response.choices[0].message.content + '';
+}
+
+const getTitle = (filePath: string): string => {
+  const fileData = fs.readFileSync(`${filePath}/content.opf`, 'utf-8');
+  const $contentOpf = cheerio.load(fileData, {xml: true});
+  const title = $contentOpf('dc\\:title').text();
+  return title;
+};
+
+const getTableOfContents = (filePath: string): string[] => {
+  const fileData = fs.readFileSync(`${filePath}/toc.ncx`, 'utf-8');
+  const $ = cheerio.load(fileData, {xmlMode: true});
+  const textNodes = $('text');
+  const result = [];
+  for (let i = 0; i < textNodes.length; i++) {
+    const text = textNodes.eq(i).text();
+    if (text.length > 3)  // Ignoring page listings
+      result.push(textNodes.eq(i).text());
+  }
+  return result;
+};
+
+const getFirstPages = (filePath: string) : string => {
+  const fileData = fs.readFileSync(filePath, 'utf-8');
+  return removeHtmlTags(fileData);
+};
+
+function removeHtmlTags(xhtmlString: string) {
+  const $ = cheerio.load(xhtmlString, {xmlMode: true});
+  return $('*').contents().filter((i: number, element: any) => {
+    return element.nodeType === 3;
+  }).text();
+}
