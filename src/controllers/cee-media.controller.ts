@@ -54,6 +54,14 @@ export class CeeMediaController {
     return this.ceeMediaRepository.create(ceeMedia);
   }
 
+  @get('/c2e-media/collections')
+  @response(200, {
+    description: 'CeeMedia collections'
+  })
+  async collections(): Promise<string[]> {
+    return this.ceeMediaRepository.findAllCollections();
+  }
+
   @get('/c2e-media/count')
   @response(200, {
     description: 'CeeMedia model count',
