@@ -74,9 +74,10 @@ export class CeeMediaEpubController {
     const filesList: Array<FileUploadResponse> = Object.assign(new Array<FileUploadResponse>(), files);
     const c2eMediaFile = filesList.length > 0 && filesList[0].originalname ? filesList[0].originalname : undefined;
     const c2eMediaMimetype = filesList.length > 0 && filesList[0].mimetype ? filesList[0].mimetype : undefined;
+    const collection = ('collection' in request.body) ? request.body.collection : '';
     if (c2eMediaFile && c2eMediaMimetype && ('isbn' in request.body)) {
       const epubPath = path.join(__dirname, '../../public/c2e-media-storage', filesList[0].originalname);
-      const ceeMedia = await createEpubCeeMedia(epubPath, ceeMediaRepository, filesList[0].originalname, request.body.isbn);
+      const ceeMedia = await createEpubCeeMedia(epubPath, ceeMediaRepository, filesList[0].originalname, request.body.isbn, collection);
       epubSplitter(epubPath, ceeMediaRepository, ceeMedia.id, request.body.isbn);
     }
     return {files, fields: request.body};
