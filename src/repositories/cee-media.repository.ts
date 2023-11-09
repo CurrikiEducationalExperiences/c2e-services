@@ -54,7 +54,11 @@ export class CeeMediaRepository extends DefaultCrudRepository<
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
     `;
     const result = await this.dataSource.execute(query);
-    return result;
+    if (result.length === 0) {
+      return null;
+    } else {
+      return result[0];
+    }
   }
 
   async findAllCollections() {
