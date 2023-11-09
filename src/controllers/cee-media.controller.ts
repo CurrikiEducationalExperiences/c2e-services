@@ -18,6 +18,7 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
+import {generateEpubDescription} from '../cee/utils/epub-util';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {CeeMedia} from '../models';
 import {CeeMediaRepository, CeeRepository} from '../repositories';
@@ -153,6 +154,26 @@ export class CeeMediaController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.ceeMediaRepository.deleteById(id);
+  }
+
+  @get('/descgen')
+  async descgen(@param.query.string('limit') limit: number): Promise<any[]> {
+    if (!limit || limit > 10 || limit < 1) return ['no limit'];
+
+    const results = await this.ceeMediaRepository.execute(`SELECT * FROM ceemedia WHERE title = description order by createdat DESC limit ${limit}`);
+
+    if (!Array.isArray(results)) return [];
+
+    for (const row of results) {
+      const description = await generateEpubDescription(row.resource);
+      if (description.indexOf('ENOFILE') !== -1) {
+        await this.ceeMediaRepository.updateById(row.id, {description: 'ENOFILE'});
+      } else {
+        await this.ceeMediaRepository.updateById(row.id, {description: description});
+      }
+    }
+
+    return ['done'];
   }
 
 }
