@@ -79,7 +79,8 @@ export class CeeMediaController {
   async find(
     @param.filter(CeeMedia) filter?: Filter<CeeMedia>,
   ): Promise<CeeMedia[]> {
-    return this.ceeMediaRepository.find(filter);
+    // return this.ceeMediaRepository.find(filter);
+    return this.ceeMediaRepository.getAllInHierarchy();
   }
 
   @patch('/c2e-media')

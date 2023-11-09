@@ -1,5 +1,6 @@
 import {ReadStream} from 'node:fs';
 import C2eAuthorLd from "../classes/C2eAuthorLd";
+import C2eBreadcrumbListLd from '../classes/C2eBreadcrumbListLd';
 import C2eContainerLd from "../classes/C2eContainerLd";
 import C2eContentCatalogLd from "../classes/C2eContentCatalogLd";
 import C2eContentDocumentCollectionLd from "../classes/C2eContentDocumentCollectionLd";
@@ -11,6 +12,7 @@ import C2eDigitalDocumentLd from "../classes/C2eDigitalDocumentLd";
 import C2eLd from "../classes/C2eLd";
 import C2eLicenseDigitalDocumentLd from "../classes/C2eLicenseDigitalDocumentLd";
 import C2eLicenseeLd from '../classes/C2eLicenseeLd';
+import C2eListItemLd from '../classes/C2eListItemLd';
 import C2eMdCopyrightLd from "../classes/C2eMdCopyrightLd";
 import C2eMdGeneralLd from "../classes/C2eMdGeneralLd";
 import C2eMdLifecycleLd from "../classes/C2eMdLifecycleLd";
@@ -21,6 +23,7 @@ import C2eResourceCollectionLd from "../classes/C2eResourceCollectionLd";
 import C2eSourceCodeDocumentLd from "../classes/C2eSourceCodeDocumentLd";
 import C2eSourceCodeLd from "../classes/C2eSourceCodeLd";
 import {C2E_CODE_TYPE, C2E_COLLECTION_TYPE, C2E_CONTENT_TYPE_COLLECTION_ID, C2E_CREATIVE_WORK_TYPE, C2E_DATASET_TYPE, C2E_DIGITAL_DOCUMENT_TYPE, C2E_ORGANIZATION_TYPE, C2E_PERSON_TYPE, C2E_RESOURCE_COLLECTION_ID, C2E_SOURCE_CODE_ID} from "../constants";
+import C2eBreadcrumbList from '../interfaces/C2eBreadcrumbList';
 import C2eDigitalDocument from "../interfaces/C2eDigitalDocument";
 import C2ePackageCreator from "./C2ePackageCreator";
 
@@ -38,6 +41,7 @@ export default class C2eWriter {
     private ok: Boolean = true;
     private errors: Array<string> = [];
     private skipC2ePackage: boolean = false;
+    private c2eBreadcrumbListLd: C2eBreadcrumbList;
 
     constructor(c2eId: string, private c2eStatus: string = "published") {
         this.c2eId = c2eId;
@@ -48,6 +52,7 @@ export default class C2eWriter {
         this.c2e.setCreativeWorkStatus(this.c2eStatus);
         this.c2eContentCatalog = new C2eContentCatalogLd(this.c2eId);
         this.c2eContentDocumentCollectionLd = new C2eContentDocumentCollectionLd();
+        this.c2eBreadcrumbListLd = new C2eBreadcrumbListLd(this.c2eId);
     }
 
     createC2e(c2ePath: string = ''): ReadStream | Boolean {
@@ -59,6 +64,13 @@ export default class C2eWriter {
             return readStream;
         }
         return this.ok;
+    }
+
+    createC2eBreadcrumb(breadcrumb: string[]): void {
+        breadcrumb.forEach((breadcrumbItemName, index) => {
+            this.c2eBreadcrumbListLd.addBreadcrumbItem(new C2eListItemLd(this.c2eId, index, breadcrumbItemName));
+        });
+        this.c2e.setC2eBreadcrumb(this.c2eBreadcrumbListLd);
     }
 
     createC2eResource(sourceFilePath: string, targetFilePath: string, MIMEType: string, c2eMediaIdentifier: string | undefined = undefined, c2eMediaIdentifierType: string | undefined = undefined): void {

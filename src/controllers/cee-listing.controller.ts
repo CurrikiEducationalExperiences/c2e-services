@@ -21,8 +21,6 @@ import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
-import {protectCee} from '../cee/utils';
-import {listToStore} from '../cee/utils/list-cee';
 import {CeeListing, CeeProductWcStore} from '../models';
 import {CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository, CeeStoreRepository, CeeWriterRepository} from '../repositories';
 
@@ -129,6 +127,13 @@ export class CeeListingController {
       identifierType,
       'draft'
     );
+
+    // Breadcrumb will be created in same order as defined array below. For example:
+    // "Computer Science > Java For Dummies > Unit 1: Introduction to Java" would be defined as:
+    ceeMasterWriter.setBreadcrumb(["Computer Science", "Java For Dummies", "Unit 1: Introduction to Java"]);
+    // Keywords are like tags which can be used for searching and filtering
+    ceeMasterWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
+
     ceeMasterWriter.setLicenseType(ceeListRequest?.licenseType);
     ceeMasterWriter.setLicenseTerms(ceeListRequest?.licenseTerms);
     ceeMasterWriter.setLicensePrice(ceeListRequest?.price);
@@ -152,6 +157,14 @@ export class CeeListingController {
       identifierType,
       'preview'
     );
+
+    // Breadcrumb will be created in same order as defined array below. For example:
+    // "Computer Science > Java For Dummies > Unit 1: Introduction to Java" would be defined as:
+    ceePreviewWriter.setBreadcrumb(["Computer Science", "Java For Dummies", "Unit 1: Introduction to Java"]);
+    // Keywords are like tags which can be used for searching and filtering
+    ceePreviewWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
+
+    ceePreviewWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
     ceePreviewWriter.setLicenseType(ceeListRequest?.licenseType);
     ceePreviewWriter.setLicenseTerms(ceeListRequest?.licenseTerms);
     ceePreviewWriter.setLicensePrice(ceeListRequest?.price);
@@ -160,7 +173,7 @@ export class CeeListingController {
     ceePreviewWriter.setLicenseExpires(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
     let ceePreviewFileStream: ReadStream | Boolean = ceePreviewWriter.write();
     await this.ceeRepository.updateById(ceePreviewRecord.id, {title, description, manifest: ceePreviewWriter.getC2eManifest(), type: 'preview'});
-    await protectCee(ceePreviewFileStream, ceePreviewRecord);
+    // await protectCee(ceePreviewFileStream, ceePreviewRecord);
 
     // making c2e listing
     const ceeListingRecord = await this.ceeListingRepository.create({ceePreviewId: ceePreviewRecord.id, ceeMasterId: ceeMasterRecord.id, ceeWriterId: ceeWriterRecord.id, ceeStoreId: ceeStoreRecord.id});
@@ -237,7 +250,7 @@ export class CeeListingController {
       consumerSecret: ceeStoreRecord.APIConsumerSecret,
       version: ceeStoreRecord.APIVersion
     };
-    await listToStore(ceeStoreConfig, ceeProductWcStore);
+    // await listToStore(ceeStoreConfig, ceeProductWcStore);
 
     return ceeListingRecord;
   }
