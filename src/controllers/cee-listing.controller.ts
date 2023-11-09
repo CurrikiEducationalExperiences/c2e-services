@@ -92,7 +92,7 @@ export class CeeListingController {
 
     const rootparentid = ceeMediaInHierarchy && ceeMediaInHierarchy?.rootparentid ? ceeMediaInHierarchy?.rootparentid : '';
     const ceeRootMedia = await this.ceeMediaRepository.findById(rootparentid);
-    const rooCollection = ceeRootMedia?.collection ? ceeRootMedia?.collection : 'C2Es';
+    const rootCollection = ceeRootMedia?.collection ? ceeRootMedia?.collection : 'C2Es';
     const bookCollection = ceeRootMedia?.title ? ceeRootMedia?.title : 'C2E Collection';
     const unitCollection = ceeMediaInHierarchy?.parentid && ceeMediaInHierarchy?.parentid === rootparentid ? 'Default Collection' :
       (ceeMediaParentRecord?.title ? ceeMediaParentRecord?.title : 'Default Collection');
@@ -140,7 +140,7 @@ export class CeeListingController {
 
     // Breadcrumb will be created in same order as defined array below. For example:
     // "Computer Science > Java For Dummies > Unit 1: Introduction to Java" would be defined as:
-    ceeMasterWriter.setBreadcrumb([rooCollection, bookCollection, unitCollection]);
+    ceeMasterWriter.setBreadcrumb([rootCollection, bookCollection, unitCollection]);
     // Keywords are like tags which can be used for searching and filtering
     ceeMasterWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
 
@@ -170,7 +170,7 @@ export class CeeListingController {
 
     // Breadcrumb will be created in same order as defined array below. For example:
     // "Computer Science > Java For Dummies > Unit 1: Introduction to Java" would be defined as:
-    ceePreviewWriter.setBreadcrumb([rooCollection, bookCollection, unitCollection]);
+    ceePreviewWriter.setBreadcrumb([rootCollection, bookCollection, unitCollection]);
     // Keywords are like tags which can be used for searching and filtering
     ceePreviewWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
 
