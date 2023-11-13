@@ -21,8 +21,8 @@ import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
-import {protectCee} from '../cee/utils';
 import {listToStore} from '../cee/utils/list-cee';
+import {protectCee} from '../cee/utils/protect-cee';
 import {CeeListing, CeeProductWcStore} from '../models';
 import {CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository, CeeStoreRepository, CeeWriterRepository} from '../repositories';
 
@@ -88,6 +88,14 @@ export class CeeListingController {
 
     const ceeMediaRecord = await this.ceeMediaRepository.findById(ceeListRequest.ceeMediaId);
     const ceeMediaParentRecord = ceeMediaRecord?.parentId ? await this.ceeMediaRepository.findById(ceeMediaRecord.parentId) : null;
+    const ceeMediaInHierarchy = await this.ceeMediaRepository.findOneInHierarchy(ceeMediaRecord.id);
+
+    const rootparentid = ceeMediaInHierarchy && ceeMediaInHierarchy?.rootparentid ? ceeMediaInHierarchy?.rootparentid : '';
+    const ceeRootMedia = await this.ceeMediaRepository.findById(rootparentid);
+    const rootCollection = ceeRootMedia?.collection ? ceeRootMedia?.collection : 'C2Es';
+    const bookCollection = ceeRootMedia?.title ? ceeRootMedia?.title : 'C2E Collection';
+    const unitCollection = ceeMediaInHierarchy?.parentid && ceeMediaInHierarchy?.parentid === rootparentid ? 'Default Collection' :
+      (ceeMediaParentRecord?.title ? ceeMediaParentRecord?.title : 'Default Collection');
 
     const ceeWriterRecord = await this.ceeWriterRepository.findById(ceeListRequest.ceeWriterId);
     const ceeStoreRecord = await this.ceeStoreRepository.findById(ceeListRequest.ceeStoreId);
@@ -129,6 +137,13 @@ export class CeeListingController {
       identifierType,
       'draft'
     );
+
+    // Breadcrumb will be created in same order as defined array below. For example:
+    // "Computer Science > Java For Dummies > Unit 1: Introduction to Java" would be defined as:
+    ceeMasterWriter.setBreadcrumb([rootCollection, bookCollection, unitCollection]);
+    // Keywords are like tags which can be used for searching and filtering
+    ceeMasterWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
+
     ceeMasterWriter.setLicenseType(ceeListRequest?.licenseType);
     ceeMasterWriter.setLicenseTerms(ceeListRequest?.licenseTerms);
     ceeMasterWriter.setLicensePrice(ceeListRequest?.price);
@@ -152,6 +167,13 @@ export class CeeListingController {
       identifierType,
       'preview'
     );
+
+    // Breadcrumb will be created in same order as defined array below. For example:
+    // "Computer Science > Java For Dummies > Unit 1: Introduction to Java" would be defined as:
+    ceePreviewWriter.setBreadcrumb([rootCollection, bookCollection, unitCollection]);
+    // Keywords are like tags which can be used for searching and filtering
+    ceePreviewWriter.setKeywords(["Education", "Curriculum", "Curriki", "EPUB"]);
+
     ceePreviewWriter.setLicenseType(ceeListRequest?.licenseType);
     ceePreviewWriter.setLicenseTerms(ceeListRequest?.licenseTerms);
     ceePreviewWriter.setLicensePrice(ceeListRequest?.price);

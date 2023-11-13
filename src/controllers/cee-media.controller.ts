@@ -54,6 +54,14 @@ export class CeeMediaController {
     return this.ceeMediaRepository.create(ceeMedia);
   }
 
+  @get('/c2e-media/collections')
+  @response(200, {
+    description: 'CeeMedia collections'
+  })
+  async collections(): Promise<string[]> {
+    return this.ceeMediaRepository.findAllCollections();
+  }
+
   @get('/c2e-media/count')
   @response(200, {
     description: 'CeeMedia model count',
@@ -80,7 +88,8 @@ export class CeeMediaController {
   async find(
     @param.filter(CeeMedia) filter?: Filter<CeeMedia>,
   ): Promise<CeeMedia[]> {
-    return this.ceeMediaRepository.find(filter);
+    // return this.ceeMediaRepository.find(filter);
+    return this.ceeMediaRepository.getAllInHierarchy();
   }
 
   @patch('/c2e-media')

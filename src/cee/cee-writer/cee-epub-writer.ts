@@ -15,6 +15,8 @@ export class CeeEpubWriter {
   private licenseIdentifier: string = '';
   private licenseDateCreated: string = '';
   private licenseExpires: string = '';
+  private keywords: string[] = [];
+  private breadcrumb: string[] = [];
 
   constructor(
     private c2eMediaFile: string,
@@ -28,6 +30,21 @@ export class CeeEpubWriter {
     private c2eMediaIdentifierType: string = '',
     private c2eStatus: string = 'published'
   ) { }
+
+  setBreadcrumb(breadcrumb: string[]): void {
+    this.breadcrumb = breadcrumb;
+  }
+
+  getBreadcrumb(): string[] {
+    return this.breadcrumb;
+  }
+
+  setKeywords(keywords: string[]): void {
+    this.keywords = keywords;
+  }
+  getKeywords(): string[] {
+    return this.keywords;
+  }
 
   setLicenseExpires(licenseExpires: string): void {
     this.licenseExpires = licenseExpires;
@@ -116,7 +133,7 @@ export class CeeEpubWriter {
       general: {
         title: this.cee.title,
         description: this.cee.description || 'No description available',
-        keywords: ["Education", "Curriculum", "Curriki", "EPUB"]
+        keywords: this.getKeywords(),
       },
       subjectOf: {
         name: this.c2eSubjectOfName,
@@ -157,6 +174,9 @@ export class CeeEpubWriter {
       codeVersion: 'v1.0',
       codeStatus: 'Beta'
     });
+
+
+    c2eWriter.createC2eBreadcrumb(this.getBreadcrumb());
 
     c2eWriter.setSkipC2ePackage(this.skipC2ePackage);
     let readStream = c2eWriter.createC2e(c2eStoragePath);

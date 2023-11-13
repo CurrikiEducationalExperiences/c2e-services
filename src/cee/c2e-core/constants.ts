@@ -18,3 +18,6 @@ export const DOUBLE_TYPE = 'xsd:double';
 export const DATETIME_TYPE = 'xsd:dateTime';
 export const DATE_TYPE = 'xsd:date';
 export const TIME_TYPE = 'xsd:time';
+export const C2E_ListItem_TYPE = 'sdons:ListItem';
+export const C2E_BreadcrumbList_TYPE = 'sdons:BreadcrumbList';
+export const C2E_CollectionPage_TYPE = 'sdons:CollectionPage';

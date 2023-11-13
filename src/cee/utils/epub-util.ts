@@ -50,7 +50,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
   const tocFileData = fs.readFileSync(`${tempBookPath}/${tocFolder}/toc.ncx`, 'utf-8');
   const $content = cheerio.load(contentFileData, {xml: true});
   const $toc = cheerio.load(tocFileData, {xml: true});
-  const idrefArray = $content('itemref').get().map((item:any) => { return item.attribs.idref; });
+  const idrefArray = $content('itemref').get().map((item: any) => {return item.attribs.idref;});
 
   for (const idref of idrefArray) {
     // Create new copy
@@ -163,7 +163,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     zip2.writeZip(path.join(publicPath, `c2e-media-storage/${epubFile}`));
     // copy cover fie
     const thumbnailPath = getThumbnailPath(path.join(publicPath, `temp/${idref}/${tocFolder}`));
-    const thumbnailFile = idref + '-' + ceeMediaRecord.id + '_thumbnail.'+thumbnailPath.split('.')[1];
+    const thumbnailFile = idref + '-' + ceeMediaRecord.id + '_thumbnail.' + thumbnailPath.split('.')[1];
     fs.copyFileSync(thumbnailPath, path.join(publicPath, `c2e-media-storage/${thumbnailFile}`));
     await ceeMediaRepository.updateById(ceeMediaRecord.id, {
       resource: epubFile,
@@ -200,7 +200,7 @@ function getAllNavPoints($: cheerioLib.CheerioAPI, element: any): NavPoint[] {
   return navPoints;
 }
 
-export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: CeeMediaRepository, resource: string, isbn: string): Promise<CeeMedia> => {
+export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: CeeMediaRepository, resource: string, isbn: string, collection: string): Promise<CeeMedia> => {
   const admZip = new AdmZip(epubPath);
   const epubEntries = admZip.getEntries(); // an array of ZipEntry records
   // read content.opf file and get html
@@ -217,7 +217,7 @@ export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: C
   const contentOpfHtmlParsed = cheerio.load(contentOpfHtml, {xml: true});
   // get text from dc:title tag from contentOpfHtmlParsed
   const title = contentOpfHtmlParsed('dc\\:title').text();
-  return ceeMediaRepository.create({
+  const media = await ceeMediaRepository.create({
     title,
     description: title,
     type: 'epub',
@@ -225,9 +225,15 @@ export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: C
     identifierType: 'ISBN',
     identifier: isbn
   });
+
+  if (collection) {
+    await ceeMediaRepository.updateById(media.id, {collection});
+  }
+  return media;
+
 }
 
-const getTocDirectory = (pathName: string) : string => {
+const getTocDirectory = (pathName: string): string => {
   const validFolders = ['ops', 'OPS', 'oebps', 'OEBPS'];
   const filenames = fs.readdirSync(pathName);
 
@@ -238,7 +244,7 @@ const getTocDirectory = (pathName: string) : string => {
   throw new Error('getTocDirectory: Unsupported epub format');
 };
 
-const getThumbnailPath = (tocFolderPath: string) : string => {
+const getThumbnailPath = (tocFolderPath: string): string => {
   const filenames = fs.readdirSync(`${tocFolderPath}/images`);
 
   for (const file of filenames) {
@@ -248,7 +254,7 @@ const getThumbnailPath = (tocFolderPath: string) : string => {
   throw new Error('getTocDirectory: Unsupported epub format. No cover found.');
 };
 
-export const generateEpubDescription = async (epubPath: string): Promise<string>=> {
+export const generateEpubDescription = async (epubPath: string): Promise<string> => {
   const tempId = "id" + Math.random().toString(16).slice(2);
   const fullEpubPath = `${publicPath}/c2e-media-storage/${epubPath}`;
   const tempBookPath = `${publicPath}/temp/${tempId}`;
@@ -323,7 +329,7 @@ const getTableOfContents = (filePath: string): string[] => {
   return result;
 };
 
-const getFirstPages = (filePath: string) : string => {
+const getFirstPages = (filePath: string): string => {
   const fileData = fs.readFileSync(filePath, 'utf-8');
   return removeHtmlTags(fileData);
 };
