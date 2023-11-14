@@ -7,6 +7,7 @@ import {
   Where,
 } from '@loopback/repository';
 import {
+  del,
   get,
   getModelSchemaRef,
   param,
@@ -382,7 +383,7 @@ export class CeeListingController {
   ): Promise<void> {
     await this.ceeListingRepository.replaceById(id, ceeListing);
   }
-
+  */
   @del('/c2e-listings/{id}')
   @response(204, {
     description: 'CeeListing DELETE success',
@@ -390,5 +391,5 @@ export class CeeListingController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.ceeListingRepository.deleteById(id);
   }
-  */
+
 }
