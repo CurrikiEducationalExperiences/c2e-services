@@ -28,7 +28,7 @@ import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeLicenseBatchRequestSchema} from '../cee/openapi-schema';
-import {generateLicenseKey, licneseCee} from '../cee/utils';
+import {generateLicenseKey, licenseCee} from '../cee/utils';
 import {checkToken} from '../cee/utils/gapi';
 import {CeeLicense} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
@@ -93,7 +93,7 @@ export class CeeLicenseController {
     const ceesMasterListingsToLicense = ceeListingsToLicense.filter(x => x.level > 1);
 
     ceesMasterListingsToLicense.forEach(async (ceeMaster: any) => {
-      licneseCee(
+      licenseCee(
         licenseeEmail,
         licenseeName,
         ceeMaster.ceelisting_id,
