@@ -6,7 +6,7 @@ import {C2E_ORGANIZATION_TYPE} from '../c2e-core/constants';
 import {CeeWriter} from '../cee-writer/cee-writer';
 import {generateLicenseKey} from './protect-cee';
 
-export const licneseCee = async (
+export const licenseCee = async (
   licenseeEmail: string,
   licenseeName: string,
   ceeListingId: string,
