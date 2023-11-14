@@ -151,7 +151,7 @@ export class CeeLicenseController {
             title: ceeRecord?.title,
             description: ceeRecord?.description,
             subjectOf: manifest?.c2eMetadata?.subjectOf?.name,
-            collection: manifest?.archivedAt?.breadcrumb?.itemListElement
+            breadcrumb: manifest
           }
         };
       }));
