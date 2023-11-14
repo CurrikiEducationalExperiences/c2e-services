@@ -12,6 +12,7 @@ import {
 import * as path from 'path';
 import {FileUploadResponse} from "../cee/types";
 import {createEpubCeeMedia, epubSplitter} from '../cee/utils';
+import {STORAGE_FOLDER} from '../config';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {CeeMediaRepository, CeeRepository} from '../repositories';
 import {FileUploadHandler} from '../types';
@@ -76,7 +77,7 @@ export class CeeMediaEpubController {
     const c2eMediaMimetype = filesList.length > 0 && filesList[0].mimetype ? filesList[0].mimetype : undefined;
     const collection = ('collection' in request.body) ? request.body.collection : 'C2E Collection';
     if (c2eMediaFile && c2eMediaMimetype && ('isbn' in request.body)) {
-      const epubPath = path.join(__dirname, '../../public/c2e-media-storage', filesList[0].originalname);
+      const epubPath = path.join(STORAGE_FOLDER, '/', filesList[0].originalname);
       const ceeMedia = await createEpubCeeMedia(epubPath, ceeMediaRepository, filesList[0].originalname, request.body.isbn, collection);
       await epubSplitter(epubPath, ceeMediaRepository, ceeMedia, request.body.isbn);
     }
