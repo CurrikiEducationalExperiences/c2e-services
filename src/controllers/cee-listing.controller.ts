@@ -132,7 +132,7 @@ export class CeeListingController {
       ceePublisher,
       ceeMediaRecord.resource,
       'epub',
-      (ceeMediaParentRecord?.title ? ceeMediaParentRecord.title : ''),
+      (ceeRootMedia?.title ? ceeRootMedia?.title : ceeMediaParentRecord?.title),
       identifierValue,
       identifierType,
       'draft'

@@ -3,7 +3,7 @@ import * as cheerioLib from 'cheerio';
 import * as fs from 'fs';
 import OpenAI from 'openai';
 import path from 'path';
-import {OPENAI_KEY} from '../../config';
+import {OPENAI_KEY, STORAGE_FOLDER, TEMP_FOLDER} from '../../config';
 import {CeeMedia} from '../../models';
 import {CeeMediaRepository} from '../../repositories';
 const cheerio = require('cheerio');
@@ -20,9 +20,7 @@ interface NavPoint {
   children?: NavPoint[];
 }
 
-const publicPath = path.join(__dirname, '../../../public');
-
-export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMediaId: string, isbn: string): Promise<boolean> => {
+export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMedia: CeeMedia, isbn: string): Promise<boolean> => {
 
   const walk = (dir: string, files: Object[] = []) => {
     const dirFiles = fs.readdirSync(dir)
@@ -37,12 +35,11 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     return files
   }
 
-
-  const publicPath = path.join(__dirname, '../../../public');
+  const tempId = "id" + Math.random().toString(16).slice(2);
   const file = epub;
   // Unzip to temp folder
   const zip = new AdmZip(file);
-  const tempBookPath = path.join(publicPath, 'temp/tempbook');
+  const tempBookPath = path.join(TEMP_FOLDER, `/${tempId}/tempbook`);
   zip.extractAllTo(tempBookPath, true);
   // Read through the spine in content.opf
   const tocFolder = getTocDirectory(tempBookPath);
@@ -52,9 +49,11 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
   const $toc = cheerio.load(tocFileData, {xml: true});
   const idrefArray = $content('itemref').get().map((item: any) => {return item.attribs.idref;});
 
+  const chaptersArray = []; // Holds a map of chapter title to ceemedia.id
+
   for (const idref of idrefArray) {
     // Create new copy
-    zip.extractAllTo(path.join(publicPath, `temp/${idref}`), true);
+    zip.extractAllTo(path.join(TEMP_FOLDER, `/${tempId}/${idref}`), true);
 
     // Editing content.opf (content manifest)
     const $innerContent = cheerio.load(contentFileData, {xml: true});
@@ -66,6 +65,24 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       continue;
       // throw new Error(`Unexpected navpoint format for ${idref} chapter content. xhtmlFile: ${xhtmlFile}`);
     }
+    // Get parent navpoint. Will be used as collection if it exists
+    let hierarchyParentLabel = '';
+    let hierarchyParentId = '';
+    const sectionTitle = $toc(`navPoint[id="${navpointContentTag[0].parent.attribs.id}"] > navLabel > text`)[0].children[0].data;
+    if (navpointContentTag[0].parent.parent.name === 'navPoint') {
+      const parentLabel = $toc(`navPoint[id="${navpointContentTag[0].parent.parent.attribs.id}"] > navLabel > text`)[0].children[0].data;
+      hierarchyParentLabel = (parentLabel) ? parentLabel : `${parentCeeMedia.title}*`;
+      for (const chap of chaptersArray) {
+        if (chap.title === hierarchyParentLabel) {
+          hierarchyParentId = chap.id;
+          break;
+        }
+      }
+    } else {
+      hierarchyParentLabel = parentCeeMedia.title;
+      hierarchyParentId = parentCeeMedia.id;
+    }
+
     // get parent navMap of navpointContentTag
     const xhtmlFileNavMapTag = navpointContentTag.parent();
     const allNavPoints: NavPoint[] = getAllNavPoints($toc, xhtmlFileNavMapTag);
@@ -92,7 +109,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       }
     });
 
-    fs.writeFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/content.opf`), $innerContent.html());
+    fs.writeFileSync(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}/content.opf`), $innerContent.html());
 
     // Editing toc.ncx (table of contents)
     const $innerToc = cheerio.load(tocFileData, {xml: true});
@@ -103,15 +120,15 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     const html = $innerToc.html(navpointContent[0].parent); // Getting chapter navpoint
     $innerToc('navPoint').remove(); // Removing all navpoints
     $innerToc(html).appendTo('navMap');
-    fs.writeFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/toc.ncx`), $innerToc.html());
+    fs.writeFileSync(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}/toc.ncx`), $innerToc.html());
 
     // get first text from html
     const firstText = cheerio.load(html, {xml: true})('text').first().html();
 
     // Delete unused xhtml files and images
-    const allFiles: Array<FileType> = Object.assign(new Array<FileType>(), walk(path.join(publicPath, `temp/${idref}/${tocFolder}`)));
+    const allFiles: Array<FileType> = Object.assign(new Array<FileType>(), walk(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}`)));
     // const chapterXhtml = fs.readFileSync(path.join(publicPath, `temp/${idref}/OPS/${xhtmlFile}`), 'utf-8');
-    const chaptersXhtml = xhtmlFileAll.map(xhtmlFile => fs.readFileSync(path.join(publicPath, `temp/${idref}/${tocFolder}/${xhtmlFile}`), 'utf-8')).join(' ');
+    const chaptersXhtml = xhtmlFileAll.map(xhtmlFile => fs.readFileSync(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}/${xhtmlFile}`), 'utf-8')).join(' ');
     const removedFiles: Array<FileType> = [];
     for (const contentFile of allFiles) {
 
@@ -130,9 +147,9 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
 
     // Repackaging
     const zip2 = new AdmZip();
-    zip2.addLocalFile(path.join(publicPath, `temp/${idref}/mimetype`));
-    zip2.addLocalFolder(path.join(publicPath, `temp/${idref}/META-INF`), 'META-INF');
-    zip2.addLocalFolder(path.join(publicPath, `temp/${idref}/${tocFolder}`), tocFolder);
+    zip2.addLocalFile(path.join(TEMP_FOLDER, `/${tempId}/${idref}/mimetype`));
+    zip2.addLocalFolder(path.join(TEMP_FOLDER, `/${tempId}/${idref}/META-INF`), 'META-INF');
+    zip2.addLocalFolder(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}`), tocFolder);
 
     // read OPS/content.opf file and get html
     const contentOpf = zip2.getEntries().find((e: any) => e.entryName === `${tocFolder}/content.opf`);
@@ -151,28 +168,30 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     zip2.updateFile(`${tocFolder}/content.opf`, Buffer.from($contentOpf.html(), 'utf8'));
 
     const ceeMediaRecord = await ceeMediaRepository.create({
-      title: firstText,
-      description: firstText,
+      title: sectionTitle,
+      description: sectionTitle,
       type: 'epub',
       resource: 'pending',
-      parentId: parentCeeMediaId,
+      parentId: hierarchyParentId,
       identifierType: 'ISBN',
-      identifier: isbn
+      identifier: isbn,
+      collection: hierarchyParentLabel
     });
     const epubFile = idref + '-' + ceeMediaRecord.id + '.epub';
-    zip2.writeZip(path.join(publicPath, `c2e-media-storage/${epubFile}`));
+    zip2.writeZip(path.join(STORAGE_FOLDER, `/${epubFile}`));
     // copy cover fie
-    const thumbnailPath = getThumbnailPath(path.join(publicPath, `temp/${idref}/${tocFolder}`));
+    const thumbnailPath = getThumbnailPath(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}`));
     const thumbnailFile = idref + '-' + ceeMediaRecord.id + '_thumbnail.' + thumbnailPath.split('.')[1];
-    fs.copyFileSync(thumbnailPath, path.join(publicPath, `c2e-media-storage/${thumbnailFile}`));
+    fs.copyFileSync(thumbnailPath, path.join(STORAGE_FOLDER, `/${thumbnailFile}`));
     await ceeMediaRepository.updateById(ceeMediaRecord.id, {
       resource: epubFile,
       thumbnail: thumbnailFile
     });
+    chaptersArray.push({id: ceeMediaRecord.id, title: sectionTitle});
   };
 
   // Cleanup
-  fs.rmSync(path.join(publicPath, 'temp'), {recursive: true, maxRetries: 10});
+  fs.rmSync(path.join(TEMP_FOLDER, `/${tempId}`), {recursive: true, maxRetries: 10});
   return true;
 };
 
@@ -212,7 +231,6 @@ export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: C
   }
 
   const contentOpfHtml = contentOpf.getData().toString('utf8');
-  const cheerio = require('cheerio');
   // load html from contentOpfHtml using cheerio
   const contentOpfHtmlParsed = cheerio.load(contentOpfHtml, {xml: true});
   // get text from dc:title tag from contentOpfHtmlParsed
@@ -223,14 +241,11 @@ export const createEpubCeeMedia = async (epubPath: string, ceeMediaRepository: C
     type: 'epub',
     resource,
     identifierType: 'ISBN',
-    identifier: isbn
+    identifier: isbn,
+    collection: collection
   });
 
-  if (collection) {
-    await ceeMediaRepository.updateById(media.id, {collection});
-  }
   return media;
-
 }
 
 const getTocDirectory = (pathName: string): string => {
@@ -254,10 +269,13 @@ const getThumbnailPath = (tocFolderPath: string): string => {
   throw new Error('getTocDirectory: Unsupported epub format. No cover found.');
 };
 
-export const generateEpubDescription = async (epubPath: string): Promise<string> => {
+export const generateEpubDescription = async (epubPath: string, model: string, maxContextChars: number): Promise<string> => {
+  const validModels = ["gpt-4", "gpt-4-1106-preview"];
+  if (validModels.indexOf(model) === -1) return `EINMOD Model is not valid: ${model}`;
+
   const tempId = "id" + Math.random().toString(16).slice(2);
-  const fullEpubPath = `${publicPath}/c2e-media-storage/${epubPath}`;
-  const tempBookPath = `${publicPath}/temp/${tempId}`;
+  const fullEpubPath = `${STORAGE_FOLDER}/${epubPath}`;
+  const tempBookPath = `${TEMP_FOLDER}/${tempId}`;
 
   if (!fs.existsSync(fullEpubPath)) return `ENOFILE File doesn't exist: ${fullEpubPath}`;
   // Unzip to temp folder
@@ -269,7 +287,6 @@ export const generateEpubDescription = async (epubPath: string): Promise<string>
   const toc = getTableOfContents(tocDir);
   // Loop through list of files and get text until we reach context limit
   const filenames = fs.readdirSync(tocDir);
-  const maxContextChars = 2500;
   let content = '';
 
   for (const filename of filenames) {
@@ -291,17 +308,12 @@ export const generateEpubDescription = async (epubPath: string): Promise<string>
     apiKey: OPENAI_KEY
   });
   const response = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: model,
     messages: [
       {"role": "system", "content": systemPrompt},
       {"role": "user", "content": promptText}
     ]
   });
-
-  if (response.usage) {
-    const promptCost = (response.usage.prompt_tokens * 0.03) / 1000;
-    const respCost = (response.usage.completion_tokens * 0.06) / 1000;
-  }
 
   // Clean up
   fs.rmSync(tempBookPath, {recursive: true, maxRetries: 10});

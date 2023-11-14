@@ -10,6 +10,7 @@ import {
 import {ServiceMixin} from '@loopback/service-proxy';
 import multer from 'multer';
 import path from 'path';
+import {STORAGE_FOLDER} from './config';
 import {FILE_UPLOAD_SERVICE, STORAGE_DIRECTORY} from './keys';
 import {CeeMediaRepository, CeeStoreRepository, CeeWriterRepository} from './repositories';
 import {MySequence} from './sequence';
@@ -84,7 +85,7 @@ export class C2EServices extends BootMixin(
    */
   protected configureFileUpload(destination?: string) {
     // Upload files to `dist/.sandbox` by default
-    destination = destination ?? path.join(__dirname, '../public/c2e-media-storage');
+    destination = destination ?? STORAGE_FOLDER;
     this.bind(STORAGE_DIRECTORY).to(destination);
     const multerOptions: multer.Options = {
       storage: multer.diskStorage({

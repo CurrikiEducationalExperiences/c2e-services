@@ -1,5 +1,6 @@
 import {ReadStream} from 'fs';
 import * as path from 'path';
+import {STORAGE_FOLDER} from '../../config';
 import {Cee} from "../../models/cee.model";
 import {C2E_PERSON_TYPE, INTEGER_TYPE, STRING_TYPE} from "../c2e-core/constants";
 import C2ePersona from "../c2e-core/interfaces/C2ePersona";
@@ -100,9 +101,9 @@ export class CeeEpubWriter {
     const c2eId = this.cee.id;
     const c2eWriter = new C2eWriter(c2eId, this.c2eStatus);
 
-    const c2eMediaStoragePath = path.join(__dirname, '../../../public/c2e-media-storage');
-    const c2eStoragePath = path.join(__dirname, '../../../public/c2e-storage');
-    const c2eMediaFileStoragePath = path.join(c2eMediaStoragePath, this.c2eMediaFile);
+    const c2eMediaStoragePath = STORAGE_FOLDER;
+    const c2eStoragePath = path.join(STORAGE_FOLDER, '/');
+    const c2eMediaFileStoragePath = path.join(c2eMediaStoragePath, '/', this.c2eMediaFile);
 
     c2eWriter.createC2eResource(
       c2eMediaFileStoragePath,
