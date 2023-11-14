@@ -143,6 +143,7 @@ export class CeeLicenseController {
         const ceeLicenseRecord = await this.ceeLicenseRepository.findById(licensedMedia?.ceelicense_id);
         const ceeRecord = licensedMedia?.cee_id_licensed ? await this.ceeRepository.findById(licensedMedia?.cee_id_licensed) : null;
         const manifest = Object.assign(ceeRecord?.manifest ? ceeRecord.manifest : {});
+        const breadcrumb = manifest?.archivedAt?.breadcrumb?.itemListElement ? manifest?.archivedAt?.breadcrumb?.itemListElement : null;
         return {
           license: ceeLicenseRecord,
           licensee: ceeLicenseeRecord,
@@ -151,7 +152,7 @@ export class CeeLicenseController {
             title: ceeRecord?.title,
             description: ceeRecord?.description,
             subjectOf: manifest?.c2eMetadata?.subjectOf?.name,
-            breadcrumb: manifest
+            breadcrumb
           }
         };
       }));
