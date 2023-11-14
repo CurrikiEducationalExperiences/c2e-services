@@ -142,6 +142,8 @@ export class CeeLicenseController {
         const ceeLicenseRecord = await this.ceeLicenseRepository.findOne({where: {licenseeId: licensedMedia?.ceelicense_id}});
         const ceeRecord = licensedMedia?.cee_id_licensed ? await this.ceeRepository.findById(licensedMedia?.cee_id_licensed) : null;
         const manifest = Object.assign(ceeRecord?.manifest ? ceeRecord.manifest : {});
+        return licensedMedia;
+        /*
         return {
           license: ceeLicenseRecord,
           licensee: ceeLicenseeRecord,
@@ -153,6 +155,7 @@ export class CeeLicenseController {
             breadcrumb: manifest?.archivedAt?.breadcrumb?.itemListElement
           }
         };
+        */
       });
       return ceeLicensedC2es;
     } else {
