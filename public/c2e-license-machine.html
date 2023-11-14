@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>C2E Licnese Machine</title>
+  <title>C2E License Machine</title>
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <!-- Font Awesome CSS for icons -->
@@ -15,17 +15,17 @@
   <div class="container mt-5">
     <!-- back button with icon -->
     <div class="rounded p-4 mb-4 bg-light">
-      <h2>Licnesed C2Es</h2>
+      <h2>Licensed C2Es</h2>
 
       <div class="form-group">
         <div class="row">
           <div class="col col-md-4">
-            <label for="ebookUpload"><strong><u>Step-1</u></strong> Enter Licnesee Email:</label>
+            <label for="ebookUpload"><strong><u>Step-1</u></strong> Enter Licensee Email:</label>
             <input type="text" class="form-control-file" id="email" name="email" required>
           </div>
           <div class="col col-md-3">
             <label for="ebookUpload"><strong><u>Step-2</u></strong></label> <br />
-            <button id="fetchLicneses" type="button" class="btn btn-primary">Review Licnesned C2Es</button>
+            <button id="fetchLicenses" type="button" class="btn btn-primary">Review Licensed C2Es</button>
           </div>
           <div class="col col-md-3">
             <label for="ebookUpload"><strong><u>Step-3</u></strong></label> <br />
@@ -39,8 +39,8 @@
 
     <div id="license_not_found" style="display: none;">
       <div class="alert alert-warning" role="alert">
-        <h4 class="alert-heading">No Licnesed C2Es Found!</h4>
-        <p>There are no licnesed C2Es found for the given email address.</p>
+        <h4 class="alert-heading">No Licensed C2Es Found!</h4>
+        <p>There are no licensed C2Es found for the given email address.</p>
         <hr>
         <p class="mb-0">Please enter a valid email address.</p>
       </div>
@@ -95,8 +95,8 @@
   <script>
     const host = '.';
     // Upload EPUB file to the server
-    function initFetchLicneses() {
-      $('#fetchLicneses').click(function (e) {
+    function initFetchLicenses() {
+      $('#fetchLicenses').click(function (e) {
         e.preventDefault();
         const email = $('#email').val();
 
@@ -137,7 +137,7 @@
 
         cardBody.html(table);
 
-        let data = window.licensedData.filter(item => item.parentid === parentId);
+        let data = window.licensedData.filter(item => item.rootparentid === parentId && item.level > 1);
         data.forEach(item => {
           let license_terms = item.ceelicense_usage !== null && item.ceelicense_usage.hasOwnProperty('hasDefinedTerm') ? item.ceelicense_usage.hasDefinedTerm.name : '---';
           let licensetype = item.ceelicense_type !== null ? item.ceelicense_type : '----';
@@ -250,7 +250,7 @@
     }
 
     $(document).ready(function () {
-      initFetchLicneses();
+      initFetchLicenses();
     });
   </script>
 </body>

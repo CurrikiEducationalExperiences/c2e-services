@@ -28,7 +28,7 @@ import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeLicenseBatchRequestSchema} from '../cee/openapi-schema';
-import {generateLicenseKey, licneseCee} from '../cee/utils';
+import {generateLicenseKey, licenseCee} from '../cee/utils';
 import {checkToken} from '../cee/utils/gapi';
 import {CeeLicense} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
@@ -93,7 +93,7 @@ export class CeeLicenseController {
     const ceesMasterListingsToLicense = ceeListingsToLicense.filter(x => x.level > 1);
 
     ceesMasterListingsToLicense.forEach(async (ceeMaster: any) => {
-      licneseCee(
+      licenseCee(
         licenseeEmail,
         licenseeName,
         ceeMaster.ceelisting_id,
@@ -134,6 +134,36 @@ export class CeeLicenseController {
     const email = tokenResponse.email;
     // find from ceeLicenseeRepository if licensee by email exists
     const ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
+
+    if (ceeLicenseeRecord) {
+
+      const ceeLicensedMediaBooks = await this.ceeListingRepository.listByLicensedMedia(email);
+      const ceeLicensedMedia = ceeLicensedMediaBooks.filter((item: any) => item.level > 1);
+      const ceeLicensedC2es = await Promise.all(await ceeLicensedMedia.map(async (licensedMedia: any) => {
+        const ceeLicenseRecord = await this.ceeLicenseRepository.findById(licensedMedia?.ceelicense_id);
+        const ceeRecord = licensedMedia?.cee_id_licensed ? await this.ceeRepository.findById(licensedMedia?.cee_id_licensed) : null;
+        const manifest = Object.assign(ceeRecord?.manifest ? ceeRecord.manifest : {});
+        const breadcrumb = manifest?.archivedAt?.breadcrumb?.itemListElement ? manifest?.archivedAt?.breadcrumb?.itemListElement : null;
+        return {
+          license: ceeLicenseRecord,
+          licensee: ceeLicenseeRecord,
+          cee: {
+            id: ceeRecord?.id,
+            title: ceeRecord?.title,
+            description: ceeRecord?.description,
+            subjectOf: manifest?.c2eMetadata?.subjectOf?.name,
+            breadcrumb
+          }
+        };
+      }));
+      return ceeLicensedC2es;
+    } else {
+      return [];
+    }
+
+    /*
+    // find from ceeLicenseeRepository if licensee by email exists
+    const ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
     if (ceeLicenseeRecord) {
       // find all ceeLicenseRepository by licenseeId order by createdAt desc
       const ceeLicenseRecords = await this.ceeLicenseRepository.find({where: {licenseeId: ceeLicenseeRecord?.id}, order: ['createdAt DESC']});
@@ -156,6 +186,7 @@ export class CeeLicenseController {
     } else {
       return [];
     }
+    */
   }
 
   @post('/c2e-licenses')

@@ -6,7 +6,7 @@ import {C2E_ORGANIZATION_TYPE} from '../c2e-core/constants';
 import {CeeWriter} from '../cee-writer/cee-writer';
 import {generateLicenseKey} from './protect-cee';
 
-export const licneseCee = async (
+export const licenseCee = async (
   licenseeEmail: string,
   licenseeName: string,
   ceeListingId: string,
@@ -36,6 +36,11 @@ export const licneseCee = async (
   const license = manifest.c2eMetadata?.copyright?.license;
   const copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
   const publisher = manifest.c2eMetadata?.publisher;
+  const keywords = manifest.c2eMetadata?.general?.keywords.length > 0 ? manifest.c2eMetadata?.general?.keywords : ["Education", "Curriculum", "Curriki", "EPUB"];
+  const breadcrumb = Array.isArray(manifest?.archivedAt?.breadcrumb?.itemListElement) && manifest?.archivedAt?.breadcrumb?.itemListElement.length < 4 ? manifest?.archivedAt?.breadcrumb?.itemListElement : [];
+  const rootCollection = breadcrumb.length > 0 ? breadcrumb[0].item.name : 'C2Es';
+  const bookCollection = breadcrumb.length > 0 ? breadcrumb[1].item.name : 'C2E Collection';
+  const unitCollection = breadcrumb.length > 0 ? breadcrumb[2].item.name : 'Default Collection';
 
   const ceeLicensedRecord = await ceeRepository.create({
     title: ceeMasterRecord?.title,
@@ -99,6 +104,8 @@ export const licneseCee = async (
       'published'
     );
     ceeLicensedWriter.setSkipC2ePackage(true);
+    ceeLicensedWriter.setBreadcrumb([rootCollection, bookCollection, unitCollection]);
+    ceeLicensedWriter.setKeywords([...keywords]);
     ceeLicensedWriter.setLicenseType(licenseType);
     ceeLicensedWriter.setLicenseTerms(licenseTerms);
     ceeLicensedWriter.setLicensePrice(price);
