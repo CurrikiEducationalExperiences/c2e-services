@@ -20,8 +20,6 @@ interface NavPoint {
   children?: NavPoint[];
 }
 
-const publicPath = path.join(__dirname, '../../../public');
-
 export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMedia: CeeMedia, isbn: string): Promise<boolean> => {
 
   const walk = (dir: string, files: Object[] = []) => {
@@ -51,6 +49,8 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
   const $toc = cheerio.load(tocFileData, {xml: true});
   const idrefArray = $content('itemref').get().map((item: any) => {return item.attribs.idref;});
 
+  const chaptersArray = []; // Holds a map of chapter title to ceemedia.id
+
   for (const idref of idrefArray) {
     // Create new copy
     zip.extractAllTo(path.join(TEMP_FOLDER, `/${tempId}/${idref}`), true);
@@ -66,12 +66,21 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       // throw new Error(`Unexpected navpoint format for ${idref} chapter content. xhtmlFile: ${xhtmlFile}`);
     }
     // Get parent navpoint. Will be used as collection if it exists
-    let collection = null;
+    let hierarchyParentLabel = '';
+    let hierarchyParentId = '';
+    const sectionTitle = $toc(`navPoint[id="${navpointContentTag[0].parent.attribs.id}"] > navLabel > text`)[0].children[0].data;
     if (navpointContentTag[0].parent.parent.name === 'navPoint') {
       const parentLabel = $toc(`navPoint[id="${navpointContentTag[0].parent.parent.attribs.id}"] > navLabel > text`)[0].children[0].data;
-      collection = (parentLabel) ? parentLabel : `${parentCeeMedia.title}*`;
+      hierarchyParentLabel = (parentLabel) ? parentLabel : `${parentCeeMedia.title}*`;
+      for (const chap of chaptersArray) {
+        if (chap.title === hierarchyParentLabel) {
+          hierarchyParentId = chap.id;
+          break;
+        }
+      }
     } else {
-      collection = parentCeeMedia.title;
+      hierarchyParentLabel = parentCeeMedia.title;
+      hierarchyParentId = parentCeeMedia.id;
     }
 
     // get parent navMap of navpointContentTag
@@ -159,14 +168,14 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     zip2.updateFile(`${tocFolder}/content.opf`, Buffer.from($contentOpf.html(), 'utf8'));
 
     const ceeMediaRecord = await ceeMediaRepository.create({
-      title: firstText,
-      description: firstText,
+      title: sectionTitle,
+      description: sectionTitle,
       type: 'epub',
       resource: 'pending',
-      parentId: parentCeeMedia.id,
+      parentId: hierarchyParentId,
       identifierType: 'ISBN',
       identifier: isbn,
-      collection: collection
+      collection: hierarchyParentLabel
     });
     const epubFile = idref + '-' + ceeMediaRecord.id + '.epub';
     zip2.writeZip(path.join(STORAGE_FOLDER, `/${epubFile}`));
@@ -178,6 +187,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       resource: epubFile,
       thumbnail: thumbnailFile
     });
+    chaptersArray.push({id: ceeMediaRecord.id, title: sectionTitle});
   };
 
   // Cleanup
