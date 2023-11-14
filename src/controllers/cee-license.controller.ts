@@ -134,6 +134,34 @@ export class CeeLicenseController {
     const email = tokenResponse.email;
     // find from ceeLicenseeRepository if licensee by email exists
     const ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
+
+    if (ceeLicenseeRecord) {
+
+      const ceeLicensedMedia = await this.ceeListingRepository.listByLicensedMedia(email);
+      const ceeLicensedC2es = await ceeLicensedMedia.map(async (licensedMedia: any) => {
+        const ceeLicenseRecord = await this.ceeLicenseRepository.findOne({where: {licenseeId: licensedMedia?.ceelicense_id}});
+        const ceeRecord = licensedMedia?.cee_id_licensed ? await this.ceeRepository.findById(licensedMedia?.cee_id_licensed) : null;
+        const manifest = Object.assign(ceeRecord?.manifest ? ceeRecord.manifest : {});
+        return {
+          license: ceeLicenseRecord,
+          licensee: ceeLicenseeRecord,
+          cee: {
+            id: ceeRecord?.id,
+            title: ceeRecord?.title,
+            description: ceeRecord?.description,
+            subjectOf: manifest?.c2eMetadata?.subjectOf?.name,
+            breadcrumb: manifest?.archivedAt?.breadcrumb?.itemListElement
+          }
+        };
+      });
+      return ceeLicensedC2es;
+    } else {
+      return [];
+    }
+
+    /*
+    // find from ceeLicenseeRepository if licensee by email exists
+    const ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
     if (ceeLicenseeRecord) {
       // find all ceeLicenseRepository by licenseeId order by createdAt desc
       const ceeLicenseRecords = await this.ceeLicenseRepository.find({where: {licenseeId: ceeLicenseeRecord?.id}, order: ['createdAt DESC']});
@@ -156,6 +184,7 @@ export class CeeLicenseController {
     } else {
       return [];
     }
+    */
   }
 
   @post('/c2e-licenses')
