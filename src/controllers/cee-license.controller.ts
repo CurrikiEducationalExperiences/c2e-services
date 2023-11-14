@@ -139,7 +139,7 @@ export class CeeLicenseController {
 
       const ceeLicensedMediaBooks = await this.ceeListingRepository.listByLicensedMedia(email);
       const ceeLicensedMedia = ceeLicensedMediaBooks.filter((item: any) => item.level > 1);
-      const ceeLicensedC2es = await ceeLicensedMedia.map(async (licensedMedia: any) => {
+      const ceeLicensedC2es = await Promise.all(await ceeLicensedMedia.map(async (licensedMedia: any) => {
         const ceeLicenseRecord = await this.ceeLicenseRepository.findOne({where: {licenseeId: licensedMedia?.ceelicense_id}});
         const ceeRecord = licensedMedia?.cee_id_licensed ? await this.ceeRepository.findById(licensedMedia?.cee_id_licensed) : null;
         const manifest = Object.assign(ceeRecord?.manifest ? ceeRecord.manifest : {});
@@ -154,7 +154,7 @@ export class CeeLicenseController {
             breadcrumb: manifest?.archivedAt?.breadcrumb?.itemListElement
           }
         };
-      });
+      }));
       return ceeLicensedC2es;
     } else {
       return [];
