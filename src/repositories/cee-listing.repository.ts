@@ -125,7 +125,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
     const filtered: Array<any> = result.filter((item: any) => {
       if (item.level === 1) {
         const children = result.filter((child: any) => {
-          return child.parentid === item.id;
+          return child.rootparentid === item.id && child.parentid !== null;
         });
         return children.length > 0;
       }
