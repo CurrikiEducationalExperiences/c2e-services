@@ -165,15 +165,21 @@ export class CeeMediaController {
   }
 
   @get('/descgen')
-  async descgen(@param.query.string('limit') limit: number): Promise<any[]> {
+  async descgen(
+    @param.query.string('model') model: string,
+    @param.query.string('limit') limit: number,
+    @param.query.string('maxcontext') maxContext: number,
+  ): Promise<any[]> {
     if (!limit || limit > 10 || limit < 1) return ['no limit'];
+
+    if (!maxContext || maxContext > 2500 || maxContext < 1) return ['bad context'];
 
     const results = await this.ceeMediaRepository.execute(`SELECT * FROM ceemedia WHERE title = description order by createdat DESC limit ${limit}`);
 
     if (!Array.isArray(results)) return [];
 
     for (const row of results) {
-      const description = await generateEpubDescription(row.resource);
+      const description = await generateEpubDescription(row.resource, model, maxContext);
       if (description.indexOf('ENOFILE') !== -1) {
         await this.ceeMediaRepository.updateById(row.id, {description: 'ENOFILE'});
       } else {
