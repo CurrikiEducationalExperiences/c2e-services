@@ -137,7 +137,7 @@
 
         cardBody.html(table);
 
-        let data = window.licensedData.filter(item => item.parentid === parentId);
+        let data = window.licensedData.filter(item => item.rootparentid === parentId && item.level > 1);
         data.forEach(item => {
           let license_terms = item.ceelicense_usage !== null && item.ceelicense_usage.hasOwnProperty('hasDefinedTerm') ? item.ceelicense_usage.hasDefinedTerm.name : '---';
           let licensetype = item.ceelicense_type !== null ? item.ceelicense_type : '----';
