@@ -1,5 +1,30 @@
 import {SchemaObject} from '@loopback/rest';
 
+export const ceeListBatchRequest: SchemaObject = {
+  title: 'List C2E by Licensed Media Batch',
+  type: 'object',
+  required: ['ceeMediaIds'],
+  properties: {
+    ceeMediaIds: {
+      type: 'array',
+      items: {
+        type: 'string',
+      }
+    },
+  }
+}
+
+export const ceeListBatchResponse: SchemaObject = {
+  title: 'Response - List C2E by Licensed Media',
+  type: 'object',
+  required: ['message'],
+  properties: {
+    message: {
+      type: 'string',
+    }
+  }
+}
+
 export const ceeListByLicensedMedia: SchemaObject = {
   title: 'List C2E by Licensed Media',
   type: 'object',

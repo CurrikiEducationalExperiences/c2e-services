@@ -21,7 +21,7 @@ import C2eMdCopyrightHolderLd from '../cee/c2e-core/classes/C2eMdCopyrightHolder
 import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
-import {ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
+import {ceeListBatchRequest, ceeListBatchResponse, ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
 import {listToStore} from '../cee/utils/list-cee';
 import {protectCee} from '../cee/utils/protect-cee';
 import {CeeListing, CeeProductWcStore} from '../models';
@@ -69,6 +69,29 @@ export class CeeListingController {
     ceeListByMediaRequest: any
   ): Promise<any> {
     return this.ceeListingRepository.listByLicensedMedia(ceeListByMediaRequest.ceeLicenseeEmail);
+  }
+
+  @post('/c2e-listings/media/batch')
+  @response(200, {
+    description: 'Cee model instance',
+    content: {'application/json': {schema: ceeListBatchResponse}},
+  })
+  async listByMediaBatch(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: ceeListBatchRequest,
+        },
+      },
+    })
+    ceeListBatchRequest: Array<string>
+  ): Promise<string> {
+    console.log('ceeListBatchRequest >>> ', ceeListBatchRequest);
+    const ceeMediaToListRecords = await this.ceeMediaRepository.getAllIdsToList();
+    const ceeMediaIdsToList = ceeMediaToListRecords.map((ceeMediaToListRecord: any) => ceeMediaToListRecord.id);
+    console.log('ceeMediaIdsToList >>> ', ceeMediaIdsToList);
+
+    return 'completed';
   }
 
   @post('/c2e-listings/media')
