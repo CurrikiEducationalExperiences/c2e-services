@@ -14,6 +14,54 @@ export class CeeListingRepository extends DefaultCrudRepository<
     super(CeeListing, dataSource);
   }
 
+  async listByMediaToManage() {
+
+    const query = `
+      WITH RECURSIVE HierarchicalData AS (
+          SELECT id, title, parentid, id AS rootparentid, identifier, identifierType, 1 as level, id::text AS path
+          FROM ceemedia
+          WHERE parentid IS NULL
+
+          UNION ALL
+
+          SELECT t.id, t.title, t.parentid, h.rootparentid, t.identifier, t.identifierType, h.level + 1, h.path || '/' || LPAD(t.id::text, 10, '0')
+          FROM ceemedia t
+          INNER JOIN HierarchicalData h ON t.parentid = h.id
+      )
+      SELECT hd.id, hd.title, hd.parentid, hd.rootparentid, hd.identifier, hd.identifierType, hd.level,
+      cee.id as cee_id,
+      cee.type as cee_type,
+      cee.title as cee_title,
+      ceelisting.id as ceelisting_id,
+      cee.manifest->'c2eMetadata'->'copyright'->'license'->'usageInfo' as ceelicense_usage,
+      cee.manifest->'c2eMetadata'->'copyright'->'license'->>'additionalType' as ceelicense_type,
+      cee.manifest->'c2eMetadata'->'copyright'->'license'->'offers'->>'price' as price,
+      (select count(id) from ceelicense as ceelicense_sb where ceelicense_sb.ceelistingid = ceelisting.id) as totallicenses
+      FROM HierarchicalData as hd
+      LEFT JOIN ceemediacee as md_cee ON md_cee.ceemediaid = hd.id
+      LEFT JOIN cee ON cee.id = md_cee.ceeid
+      LEFT JOIN ceelisting ON ceelisting.ceemasterid = cee.id
+      WHERE (hd.level = 1 OR cee.type = 'master')
+      ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
+    `;
+
+    const result = await this.dataSource.execute(query);
+
+    // filter out level 1 media that does not have children with respect to parentid
+    const filtered: Array<any> = result.filter((item: any) => {
+      if (item.level === 1) {
+        const children = result.filter((child: any) => {
+          return child.rootparentid === item.id && child.parentid !== null;
+        });
+        return children.length > 0;
+      }
+
+      return true;
+    });
+
+    return filtered;
+  }
+
   async listByLicensedMedia(email: string) {
     const result = await this.dataSource.execute(`
     WITH RECURSIVE HierarchicalData AS (
