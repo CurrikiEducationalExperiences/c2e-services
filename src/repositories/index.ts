@@ -10,3 +10,5 @@ export * from './cee-writer.repository';
 export * from './cee-licensee.repository';
 export * from './cee-media-cee.repository';
 
+export * from './licenseview.repository';
+

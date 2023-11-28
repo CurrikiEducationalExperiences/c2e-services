@@ -11,3 +11,5 @@ export * from './cee-writer.model';
 export * from './cee-licensee.model';
 export * from './cee-media-cee.model';
 
+export * from './licenseview.model';
+

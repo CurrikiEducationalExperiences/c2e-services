@@ -29,7 +29,7 @@ import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeLicenseBatchRequestSchema} from '../cee/openapi-schema';
 import {generateLicenseKey, licenseCee} from '../cee/utils';
-import {checkToken} from '../cee/utils/gapi';
+import {checkToken, generateAPIKey} from '../cee/utils/gapi';
 import {CeeLicense} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
 
@@ -250,7 +250,7 @@ export class CeeLicenseController {
             let ceeLicenseeRecord = await this.ceeLicenseeRepository.findOne({where: {email}});
             if (!ceeLicenseeRecord) {
               // create new licensee
-              ceeLicenseeRecord = await this.ceeLicenseeRepository.create({name, email});
+              ceeLicenseeRecord = await this.ceeLicenseeRepository.create({name, email, secret: generateAPIKey()});
             }
 
             const ceeMasterRecord = await this.ceeRepository.findById(ceeListingRecord.ceeMasterId);

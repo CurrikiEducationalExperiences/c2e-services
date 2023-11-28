@@ -4,6 +4,7 @@ import C2eMdCopyrightHolderLd from '../c2e-core/classes/C2eMdCopyrightHolderLd';
 import C2ePublisherLd from '../c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../c2e-core/constants';
 import {CeeWriter} from '../cee-writer/cee-writer';
+import {generateAPIKey} from './gapi';
 import {generateLicenseKey} from './protect-cee';
 
 export const licenseCee = async (
@@ -28,7 +29,7 @@ export const licenseCee = async (
   let ceeLicenseeRecord = await ceeLicenseeRepository.findOne({where: {email}});
   if (!ceeLicenseeRecord) {
     // create new licensee
-    ceeLicenseeRecord = await ceeLicenseeRepository.create({name, email});
+    ceeLicenseeRecord = await ceeLicenseeRepository.create({name, email, secret: generateAPIKey()});
   }
 
   const ceeMasterRecord = ceeListingRecord ? await ceeRepository.findById(ceeListingRecord.ceeMasterId) : null;

@@ -27,6 +27,11 @@ export class CeeLicensee extends Entity {
   url?: string;
 
   @property({
+    type: 'string',
+  })
+  secret?: string;
+
+  @property({
     type: 'date',
     default: () => new Date(),
   })

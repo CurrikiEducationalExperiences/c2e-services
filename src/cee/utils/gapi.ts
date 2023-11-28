@@ -1,4 +1,6 @@
 import axios, {AxiosError, AxiosResponse} from 'axios';
+import {randomBytes} from 'node:crypto';
+import {CeeLicenseeRepository} from '../../repositories';
 
 export interface GoogleOAuthJWT {
   iss: string; // The issuer of the token
@@ -24,4 +26,13 @@ export const checkToken = async (token: String): Promise<any> => {
       return error.response?.data;
     });
   return tokenResponse;
+};
+
+export const checkIntegrationToken = async (repo: CeeLicenseeRepository, email: string, secret: string): Promise<any> => {
+  const licensee = await repo.findOne({where: {and: [{email: email}, {secret: secret}]}});
+  return licensee ? true : false;
+};
+
+export const generateAPIKey = () => {
+  return randomBytes(32).toString('hex');
 };
