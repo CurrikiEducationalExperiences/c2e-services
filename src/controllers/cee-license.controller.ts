@@ -93,7 +93,7 @@ export class CeeLicenseController {
     const ceesMasterListingsToLicense = ceeListingsToLicense.filter(x => x.level > 1);
 
     ceesMasterListingsToLicense.forEach(async (ceeMaster: any) => {
-      licenseCee(
+      await licenseCee(
         licenseeEmail,
         licenseeName,
         ceeMaster.ceelisting_id,
