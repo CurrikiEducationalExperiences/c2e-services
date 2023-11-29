@@ -20,21 +20,20 @@ interface NavPoint {
   children?: NavPoint[];
 }
 
-export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMedia: CeeMedia, isbn: string): Promise<boolean> => {
-
-  const walk = (dir: string, files: Object[] = []) => {
-    const dirFiles = fs.readdirSync(dir)
-    for (const f of dirFiles) {
-      const stat = fs.lstatSync(dir + '/' + f)
-      if (stat.isDirectory()) {
-        walk(dir + '/' + f, files)
-      } else {
-        files.push({filename: f, path: dir + '/' + f})
-      }
+const walk = (dir: string, files: Array<FileType> = []): Array<FileType> => {
+  const dirFiles = fs.readdirSync(dir)
+  for (const f of dirFiles) {
+    const stat = fs.lstatSync(dir + '/' + f)
+    if (stat.isDirectory()) {
+      walk(dir + '/' + f, files)
+    } else {
+      files.push({filename: f, path: dir + '/' + f})
     }
-    return files
   }
+  return files
+}
 
+export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRepository, parentCeeMedia: CeeMedia, isbn: string): Promise<boolean> => {
   const tempId = "id" + Math.random().toString(16).slice(2);
   const file = epub;
   // Unzip to temp folder
@@ -122,17 +121,14 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
     $innerToc(html).appendTo('navMap');
     fs.writeFileSync(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}/toc.ncx`), $innerToc.html());
 
-    // get first text from html
-    const firstText = cheerio.load(html, {xml: true})('text').first().html();
-
     // Delete unused xhtml files and images
     const allFiles: Array<FileType> = Object.assign(new Array<FileType>(), walk(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}`)));
     // const chapterXhtml = fs.readFileSync(path.join(publicPath, `temp/${idref}/OPS/${xhtmlFile}`), 'utf-8');
     const chaptersXhtml = xhtmlFileAll.map(xhtmlFile => fs.readFileSync(path.join(TEMP_FOLDER, `/${tempId}/${idref}/${tocFolder}/${xhtmlFile}`), 'utf-8')).join(' ');
     const removedFiles: Array<FileType> = [];
-    for (const contentFile of allFiles) {
 
-      if (contentFile.filename.indexOf('.xhtml') !== -1 && xhtmlFileAll.indexOf(contentFile.filename) === -1) {
+    for (const contentFile of allFiles) {
+      if (contentFile.filename.indexOf('.xhtml') !== -1 && xhtmlFileAll.findIndex((e) => contentFile.path.indexOf(e) !== -1) === -1) {
         fs.unlinkSync(contentFile.path);
         removedFiles.push(contentFile);
       }
@@ -286,14 +282,15 @@ export const generateEpubDescription = async (epubPath: string, model: string, m
   const title = getTitle(tocDir);
   const toc = getTableOfContents(tocDir);
   // Loop through list of files and get text until we reach context limit
-  const filenames = fs.readdirSync(tocDir);
+  //const filenames = fs.readdirSync(tocDir);
+  const filenames = walk(tocDir);
   let content = '';
 
   for (const filename of filenames) {
     if (content.length >= maxContextChars) break;
-    if (filename.indexOf('xhtml') === -1) continue;
+    if (filename.path.indexOf('.xhtml') === -1) continue;
 
-    const fileContent = getFirstPages(`${tocDir}/${filename}`);
+    const fileContent = getFirstPages(filename.path);
     content += fileContent.substring(0, maxContextChars - content.length);
   }
 
@@ -314,10 +311,8 @@ export const generateEpubDescription = async (epubPath: string, model: string, m
       {"role": "user", "content": promptText}
     ]
   });
-
   // Clean up
   fs.rmSync(tempBookPath, {recursive: true, maxRetries: 10});
-
   return response.choices[0].message.content + '';
 }
 
