@@ -165,7 +165,6 @@ export class CeeListingRepository extends DefaultCrudRepository<
       WHERE (hd.level = 1 OR cee.type = 'master' ${queryExcludedListingIds})
       ${queryLicensedMediaIds}
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
-      limit 5
     `;
 
     const result = await this.dataSource.execute(query);
