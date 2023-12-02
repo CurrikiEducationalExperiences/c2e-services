@@ -30,7 +30,7 @@ import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeCreateByIdSchema, ceeCreateByMediaSchema} from '../cee/openapi-schema';
 import {encryptCee, protectCee} from '../cee/utils';
-import {checkToken} from '../cee/utils/gapi';
+import {checkIntegrationToken} from '../cee/utils/gapi';
 import {TEMP_FOLDER} from '../config';
 import {Cee} from '../models';
 import {CeeLicenseeRepository, CeeLicenseRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository} from '../repositories';
@@ -71,17 +71,15 @@ export class CeeController {
     ceeRequest: any,
     @inject(RestBindings.Http.RESPONSE) response: ResponseObject,
   ): Promise<any> {
-    const tokenResponse = await checkToken(ceeRequest.token);
-    if (!tokenResponse.email) {
-      throw new Error(tokenResponse.error_description);
-    }
+    const authCheck = await checkIntegrationToken(this.ceeLicenseeRepository, ceeRequest.email, ceeRequest.secret);
+    if (!authCheck)
+      throw new Error('Authentication failed');
 
     const ceeRecord = await this.ceeRepository.findById(ceeRequest.ceeId);
     const ceeLicenseRecord = await this.ceeLicenseRepository.findOne({where: {ceeId: ceeRecord.id}});
     const ceeLicenseeRecord = await this.ceeLicenseeRepository.findById(ceeLicenseRecord?.licenseeId ? ceeLicenseRecord.licenseeId : '');
-    if (!ceeLicenseeRecord || ceeLicenseeRecord.email !== tokenResponse.email) {
+    if (!ceeLicenseeRecord || ceeLicenseeRecord.email !== ceeRequest.email)
       throw new Error('Invalid license');
-    }
 
     let fileStream = null;
     const manifest = Object.assign(ceeRecord.manifest ? ceeRecord.manifest : {});
