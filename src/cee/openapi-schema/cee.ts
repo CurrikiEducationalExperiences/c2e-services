@@ -37,7 +37,10 @@ export const ceeCreateByIdSchema: SchemaObject = {
     decrypt: {
       type: 'boolean',
     },
-    token: {
+    email: {
+      type: 'string',
+    },
+    secret: {
       type: 'string',
     }
   }
