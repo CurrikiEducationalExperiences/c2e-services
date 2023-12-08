@@ -69,6 +69,7 @@
     "nodemailer": "^6.9.5",
     "nodemailer-mailgun-transport": "^2.1.5",
     "openai": "^4.0.0",
+    "tincanjs": "^0.50.0",
     "tslib": "^2.0.0"
   },
   "devDependencies": {

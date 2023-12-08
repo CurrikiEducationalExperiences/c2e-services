@@ -15,3 +15,6 @@ export const MASTER_KEY = "";
 export const TEMP_FOLDER = path.resolve('./temp');
 export const STORAGE_FOLDER = path.resolve('./c2e-storage');;
 export const OPENAI_KEY = "";
+export const LRS_ENDPOINT = "";
+export const LRS_USER = "";
+export const LRS_PASS = "";
