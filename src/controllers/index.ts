@@ -7,4 +7,6 @@ export * from './cee-license.controller';
 export * from './cee-listing.controller';
 export * from './cee-store.controller';
 export * from './cee-writer.controller';
+export * from './cee-xapi.controller';
 export * from './cee.controller';
+
