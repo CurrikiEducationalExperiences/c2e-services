@@ -86,10 +86,11 @@ export class CeeLicenseController {
     })
     ceeLicenseBatchRequest: any,
   ): Promise<any> {
+    const limit = ceeLicenseBatchRequest.limit;
     const licenseeEmail = ceeLicenseBatchRequest.licenseeEmail;
     const licenseeName = ceeLicenseBatchRequest.licenseeName;
     const orderKey = crypto.randomBytes(16).toString('hex');
-    const ceeListingsToLicense = await this.ceeListingRepository.listByMediaToLicense(licenseeEmail);
+    const ceeListingsToLicense = await this.ceeListingRepository.listByMediaToLicense(licenseeEmail, limit);
     const ceesMasterListingsToLicense = ceeListingsToLicense.filter(x => x.level > 1);
 
     ceesMasterListingsToLicense.forEach(async (ceeMaster: any) => {

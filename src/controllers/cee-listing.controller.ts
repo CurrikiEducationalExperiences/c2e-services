@@ -56,7 +56,7 @@ export class CeeListingController {
     })
     ceeListByMediaRequest: any
   ): Promise<any> {
-    return this.ceeListingRepository.listByMediaToLicense(ceeListByMediaRequest.ceeLicenseeEmail);
+    return this.ceeListingRepository.listByMediaToLicense(ceeListByMediaRequest.ceeLicenseeEmail, ceeListByMediaRequest.limit);
   }
 
   @post('/c2e-listings/media-licensed')

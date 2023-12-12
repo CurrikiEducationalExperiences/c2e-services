@@ -112,7 +112,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
     return filtered;
   }
 
-  async listByMediaToLicense(email: string) {
+  async listByMediaToLicense(email: string, limit: string = '1') {
     const licensedMedia = await this.listByLicensedMedia(email);
     // filter media that are part of the Book
     const licensedMediaCees = licensedMedia.filter((item: any) => {
@@ -165,6 +165,7 @@ export class CeeListingRepository extends DefaultCrudRepository<
       WHERE (hd.level = 1 OR cee.type = 'master' ${queryExcludedListingIds})
       ${queryLicensedMediaIds}
       ORDER BY path, (SELECT createdat FROM ceemedia WHERE id = hd.id)
+      LIMIT ${limit}
     `;
 
     const result = await this.dataSource.execute(query);

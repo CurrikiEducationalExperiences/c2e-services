@@ -30,6 +30,9 @@ export const ceeListByLicensedMedia: SchemaObject = {
   type: 'object',
   required: ['ceeLicenseeEmail', 'ceeListingIds'],
   properties: {
+    limit: {
+      type: 'string',
+    },
     ceeLicenseeEmail: {
       type: 'string',
     },

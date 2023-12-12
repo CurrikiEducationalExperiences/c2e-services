@@ -52,6 +52,9 @@ export const ceeLicenseBatchRequestSchema: SchemaObject = {
   type: 'object',
   required: ['licenseeEmail', 'licenseeName'],
   properties: {
+    limit: {
+      type: 'string',
+    },
     licenseeEmail: {
       type: 'string',
     },
