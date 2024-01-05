@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C2E License Machine</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Font Awesome CSS for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+  <style>
+    .card {
+      margin-bottom: 16px;
+      border: none !important;
+      border-radius: 8px;
+    }
+
+    .card-header {
+      padding: 0.45rem 0.90rem;
+      background-color: #fff;
+      box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.25);
+      border-bottom: none !important;
+    }
+
+    .d-flex-with-gap {
+      display: flex;
+      align-items: center;
+      background: #EBF4FF;
+    }
+
+    .c2e-text {
+      color: #084892;
+      font-family: Open Sans;
+      font-size: 26px;
+      font-style: normal;
+      font-weight: bold;
+      line-height: 28px;
+
+    }
+
+    .d-flex-with-gap>* {
+      margin-right: 8px;
+    }
+
+    .chapterCard {
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      width: 345px;
+      background: #FFF;
+      box-shadow: 0px 1px 6px 0px rgba(0, 0, 0, 0.25);
+    }
+
+    .chapter-info {
+      color: #084892;
+      font-family: Open Sans;
+      font-size: 14px;
+    }
+
+    .chapter-title {
+      margin-bottom: 13px;
+    }
+
+    .info-detail {
+      display: flex;
+      color: #686868;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .title-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      color: #000;
+      font-weight: 459 !important;
+      font-size: 20px;
+      outline: none;
+    }
+
+    .opened-btn {
+      color: #084892;
+      font-size: 20px;
+      font-weight: 459;
+    }
+
+    .search-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      margin-bottom: 40px;
+      width: 447px;
+      border-radius: 56px;
+      border: 0.5px solid #084892;
+      background: #FFF;
+      box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.25);
+    }
+
+    .search-field>:first-child {
+      color: #084892;
+      outline: none;
+      width: 100%;
+      border: none;
+    }
+
+    ::placeholder {
+      color: #084892;
+    }
+
+    .remove-btn {
+      font-size: 12px;
+      padding: 4px 13px 4px 9px;
+      border-radius: 16px;
+      background: #084892;
+      color: #fff;
+      border: none;
+      width: fit-content;
+      margin-top: 16px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .allCardds {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-top: 32px;
+    }
+
+    .minus-icon {
+      transition: transform 0.5s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- back button with icon -->
+    <div class="rounded p-4 mb-4 d-flex-with-gap">
+      <img src="icons/navigation-icon.svg" alt="icon" />
+      <h2 class="c2e-text">C2E Listings</h2>
+    </div>
+
+    <div class="search-field">
+      <input type="text" placeholder="search" id="searchInput" />
+      <img src="icons/search-icon.svg" alt="search icon" />
+    </div>
+
+    <div id="license_not_found" style="display: none;">
+      <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">No C2E listings found!</h4>
+      </div>
+    </div>
+
+    <div id="accordion">
+      <!-- Accordion items will be populated using jQuery -->
+    </div>
+    <!-- make #c2eModal bootstrap modal with form have name, email and url fields -->
+    <div class="modal" id="c2eModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Licensee Information</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <h3 id="c2eMediaTitle"></h3>
+            <form id="c2eForm">
+              <input type="hidden" name="c2eMediaId" id="c2eMediaId" value="">
+              <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" id="name" name="name" value="Waqar" required>
+              </div>
+              <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" class="form-control" id="email" name="email" value="waqar@curriki.org" required>
+              </div>
+              <div class="form-group">
+                <label for="url">URL:</label>
+                <input type="url" class="form-control" id="url" name="url" value="https://x.com/waqarmnr" required>
+              </div>
+            </form>
+            <div class="alert alert-success" role="alert" id="c2eSuccessAlert" style="display: none;">
+              <a href="#"><i class="fas fa-download"></i>&nbsp;<span><span></a>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="downloadC2eBtn"> Make
+              C2E</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    const host = '.';
+    // Upload EPUB file to the server
+
+
+    // init accordion collapse
+    function initAccordionCollapse() {
+      $('#accordion').on('show.bs.collapse', function (e) {
+        const target = $(e.target);
+        const collapseId = target.attr('id');
+        const parentId = collapseId.replace('collapse', '');
+        const button = target.prev().find('.title-btn');
+        const arrowIcon = target.prev().find('.arrow-icon');
+
+        button.addClass('opened-btn');
+        arrowIcon.attr('src', 'icons/minus.svg');
+
+
+        const cardBody = target.find('.card-body');
+        const table = `
+                          <table class="table">
+                              <thead>
+                                  <tr>
+                                      <th>Title</th>
+                                  </tr>
+                              </thead>
+                              <tbody class="allCardds">
+                              </tbody>
+                          </table>
+                      `;
+
+        cardBody.html(table);
+
+        let data = window.licensedData.filter(item => item.rootparentid === parentId && item.level > 1);
+        data.forEach(item => {
+          let license_terms = item.ceelicense_usage !== null && item.ceelicense_usage.hasOwnProperty('hasDefinedTerm') ? item.ceelicense_usage.hasDefinedTerm.name : '---';
+          let licensetype = item.ceelicense_type !== null ? item.ceelicense_type : '----';
+          let price = item.price !== null ? item.price : '----';
+          const row = `
+                              <div class="chapterCard">
+                                  <strong class="chapter-title">${item.title}</strong>
+                                  <small class="info-detail"><div class="chapter-info">Listing ID / SKU</div>&nbsp;: ${item.ceelisting_id}</small>
+                                <div class="d-flex">
+                                  <small class="info-detail"><div class="chapter-info">Usage Type</div>&nbsp;: ${licensetype}</small>
+                                  &nbsp;<strong>|</strong>&nbsp;<small class="info-detail"><div class="chapter-info">Usage Terms</div>&nbsp;: ${license_terms}</small>
+                                </div>
+                                <div class="d-flex">
+                                  <small class="info-detail"><div class="chapter-info">Price</div>: ${price}</small>
+                                  &nbsp;<strong>|</strong>&nbsp;<small class="info-detail"><div class="chapter-info">Total Licenses</div>&nbsp;: ${item.totallicenses}</small>
+                                </div>
+                                <button type="button" class="remove-btn">
+                                  <img src="icons/cross-icon.svg" alt="arrowIcon" onclick="deleteList('${item.ceelisting_id}')" />Remove Listing</button>
+                              </div>
+                      `;
+
+          cardBody.find('tbody').append(row);
+        });
+
+      });
+    }
+    $('#accordion').on('hide.bs.collapse', function (e) {
+      const target = $(e.target);
+      const arrowIcon = target.prev().find('.arrow-icon');
+      const button = target.prev().find('.title-btn');
+
+      button.removeClass('opened-btn');
+      arrowIcon.attr('src', 'icons/plus.svg');
+    });
+
+    // empty accordian
+    function emptyAccordion() {
+      $('#accordion').empty();
+    }
+
+    // Fetch data and populate the accordion and tables
+    function initLoadC2eMedia(email) {
+
+      emptyAccordion();
+
+      const formData = {
+        "ceeLicenseeEmail": email,
+        "ceeListingIds": []
+      };
+      // make a POST request to the server to create a C2E
+      // Replace with your API endpoint URL
+      const apiEndpoint = host + '/c2e-listings/manage';
+      // jQuery ajax to make the POST request to apiEndpoint with the data filed c2eMediaId
+      $.ajax({
+        url: apiEndpoint,
+        type: 'GET',
+        contentType: "application/json",
+        data: JSON.stringify(formData),
+        success: function (data) {
+          $('#license_not_found').hide();
+          if (data.length === 0) {
+            if (email === '') {
+              $('#email_span').text("");
+            } else {
+              $('#email_span').text(" for " + email);
+            }
+
+            $('#license_not_found').show();
+          }
+          window.licensedData = data;
+          let licensedBooks = window.licensedData.filter(item => item.level === 1);
+          const accordion = $('#accordion');
+          licensedBooks.forEach(item => {
+            const card = `
+                          <div class="card">
+                              <div class="card-header" id="heading${item.id}">
+                                  <h5 class="mb-0">
+                                      <button class="btn btn-link title-btn" data-toggle="collapse" data-target="#collapse${item.id}" aria-expanded="true" aria-controls="collapse${item.id}">
+                                        ${item.title} (${item.identifiertype}: ${item.identifier})
+                                        <img src="icons/plus.svg" alt="arrowIcon" class="arrow-icon" />
+                                      </button>
+                                  </h5>
+                              </div>
+
+                              <div id="collapse${item.id}" class="collapse" aria-labelledby="heading${item.id}" data-parent="#accordion">
+                                  <div class="card-body">
+                                      <table class="table">
+                                          <thead>
+                                              <tr>
+                                                  <th>Title</th>
+                                                  <th>Download</th>
+                                              </tr>
+                                          </thead>
+                                          <tbody>
+                                              <tr>
+                                                  <td>${item.title}</td>
+                                                  <td><a href="${host + 'c2e-media-storage' + item.resource}" target="__blank" class="btn btn-success"><i class="fas fa-download"></i> Download</a></td>
+                                              </tr>
+                                          </tbody>
+                                      </table>
+                                  </div>
+                              </div>
+                          </div>
+                      `;
+
+            accordion.append(card);
+          });
+        },
+        error: function (error) {
+          alert('Error!');
+        }
+      });
+
+    }
+
+
+    //function that open bootstrap model with form have name, email and url fields
+    function openModel(c2eMediaId, title) {
+      // set c2eMediaId in hidden field
+      $('#c2eMediaId').val(c2eMediaId);
+      $('#c2eMediaTitle').text(title);
+      //open model
+      $('#c2eModal').modal('show');
+      //downloadC2e(c2eMediaId);
+    }
+
+    $(document).ready(function () {
+
+      initLoadC2eMedia(email);
+      initAccordionCollapse();
+    });
+
+    function deleteList(ceelisting_id) {
+      // confirm before make delete request
+      let ok = confirm("WARNING!! It will remove All Licenses and ALL C2Es for this Listing. Continue?");
+      if (ok) {
+        // make a POST request to the server to create a C2E
+        // Replace with your API endpoint URL
+        const apiEndpoint = host + '/c2e-listings/' + ceelisting_id;
+        // jQuery ajax to make the POST request to apiEndpoint with the data filed c2eMediaId
+        $.ajax({
+          url: apiEndpoint,
+          type: 'DELETE',
+          contentType: "application/json",
+          success: function (data) {
+            alert('Listing deleted successfully!');
+            initLoadC2eMedia(email);
+          },
+          error: function (error) {
+            alert('Error!');
+          }
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>
