@@ -22,7 +22,7 @@ import C2ePublisherLd from '../cee/c2e-core/classes/C2ePublisherLd';
 import {C2E_ORGANIZATION_TYPE} from '../cee/c2e-core/constants';
 import {CeeWriter} from '../cee/cee-writer/cee-writer';
 import {ceeListBatchRequest, ceeListBatchResponse, ceeListByLicensedMedia, ceeListByMediaRequest} from '../cee/openapi-schema';
-import {listCeeByMedia, listToStore} from '../cee/utils/list-cee';
+import {listCeeByMedia} from '../cee/utils/list-cee';
 import {protectCee} from '../cee/utils/protect-cee';
 import {CeeListing, CeeProductWcStore} from '../models';
 import {CeeLicenseRepository, CeeListingRepository, CeeMediaCeeRepository, CeeMediaRepository, CeeRepository, CeeStoreRepository, CeeWriterRepository} from '../repositories';
@@ -189,6 +189,8 @@ export class CeeListingController {
     const identifierValue = (ceeListRequest?.identifier?.identifierValue ? ceeListRequest.identifier.identifierValue : '');
     const identifierType = (ceeListRequest?.identifier?.identifierType ? ceeListRequest.identifier.identifierType : '');
     const price = (ceeListRequest?.price ? ceeListRequest.price : 0);
+    const copyrightFooter = `From ${(ceeRootMedia?.title ? ceeRootMedia?.title : ceeMediaParentRecord?.title)}, <a href="#" id="copyrightNotice">Copyright Notice</a>. Used by permission of John Wiley & Sons, Inc.`;
+    const copyrightNotice = `Copyright (c) 2024, John Wiley & Sons`;
 
     // making master cee
     const ceeMasterWriter = new CeeWriter(
@@ -216,6 +218,8 @@ export class CeeListingController {
     ceeMasterWriter.setLicenseIdentifier('c2e-lsc-master');
     ceeMasterWriter.setLicenseDateCreated(new Date().toISOString());
     ceeMasterWriter.setLicenseExpires(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
+    ceeMasterWriter.setCopyrightNotice(copyrightNotice);
+    ceeMasterWriter.setCopyRightFooter(copyrightFooter);
     ceeMasterWriter.write();
     await this.ceeRepository.updateById(ceeMasterRecord.id, {title, description, manifest: ceeMasterWriter.getC2eManifest(), type: 'master'});
     await this.ceeMediaCeeRepository.create({ceeId: ceeMasterRecord.id, ceeMediaId: ceeMediaRecord.id});
@@ -246,6 +250,8 @@ export class CeeListingController {
     ceePreviewWriter.setLicenseIdentifier('c2e-lsc-preview');
     ceePreviewWriter.setLicenseDateCreated(new Date().toISOString());
     ceePreviewWriter.setLicenseExpires(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
+    ceePreviewWriter.setCopyrightNotice(copyrightNotice);
+    ceePreviewWriter.setCopyRightFooter(copyrightFooter);
     let ceePreviewFileStream: ReadStream | Boolean = ceePreviewWriter.write();
     await this.ceeRepository.updateById(ceePreviewRecord.id, {title, description, manifest: ceePreviewWriter.getC2eManifest(), type: 'preview'});
     await protectCee(ceePreviewFileStream, ceePreviewRecord);
@@ -325,7 +331,7 @@ export class CeeListingController {
       consumerSecret: ceeStoreRecord.APIConsumerSecret,
       version: ceeStoreRecord.APIVersion
     };
-    await listToStore(ceeStoreConfig, ceeProductWcStore);
+    // await listToStore(ceeStoreConfig, ceeProductWcStore);
 
     return ceeListingRecord;
   }

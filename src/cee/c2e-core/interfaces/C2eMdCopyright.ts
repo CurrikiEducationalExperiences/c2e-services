@@ -7,6 +7,7 @@ interface C2eMdCopyright extends JsonLd {
     copyrightHolder: C2ePersona;
     copyrightNotice: string;
     copyrightYear: string;
+    copyrightFooter: string;
 
     setCopyrightHolder(copyrightHolder: C2ePersona): void;
     getCopyrightHolder(): C2ePersona | undefined;
@@ -14,9 +15,11 @@ interface C2eMdCopyright extends JsonLd {
     getC2eLicense(): C2eDigitalDocument | undefined;
     setCopyrightNotic(copyrightNotice: string): void;
     getCopyrightNotic(): string | undefined;
+    setCopyrightFooter(copyRightFooter: string): void;
+    getCopyrightFooter(): string | undefined;
     setCopyrightYear(copyrightYear: string): void;
     getCopyrightYear(): string | undefined;
-        
+
 }
 
 export default C2eMdCopyright;

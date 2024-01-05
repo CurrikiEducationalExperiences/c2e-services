@@ -134,6 +134,7 @@ export default class C2eWriter {
             licenseExpires?: string,
             copyrightHolder?: {type: string, name: string, email: string, url?: string},
             copyrightNote?: string,
+            copyrightFooter?: string,
             copyrightYear?: string,
             codeVersion?: string,
             codeStatus?: string,
@@ -155,7 +156,7 @@ export default class C2eWriter {
         c2eLicenseDigitalDocumentLd.licenseExpires = metadata.licenseExpires ? metadata.licenseExpires : '';
 
         const copyrightHolderLd = new C2ePublisherLd(this.c2eId, metadata.copyrightHolder?.type || C2E_PERSON_TYPE, metadata?.copyrightHolder?.name || '', metadata?.copyrightHolder?.email || '', metadata?.copyrightHolder?.url || '');
-        const c2eMdCopyrightLd = new C2eMdCopyrightLd(this.c2eId, C2E_DATASET_TYPE, c2eLicenseDigitalDocumentLd, copyrightHolderLd, (metadata?.copyrightNote ? metadata?.copyrightNote : ''), (metadata?.copyrightYear ? metadata?.copyrightYear : ''));
+        const c2eMdCopyrightLd = new C2eMdCopyrightLd(this.c2eId, C2E_DATASET_TYPE, c2eLicenseDigitalDocumentLd, copyrightHolderLd, (metadata?.copyrightNote ? metadata?.copyrightNote : ''), (metadata?.copyrightFooter ? metadata?.copyrightFooter : ''), (metadata?.copyrightYear ? metadata?.copyrightYear : ''));
         const c2eMdLifecycleLd = new C2eMdLifecycleLd(this.c2eId, C2E_CODE_TYPE, (metadata?.codeVersion ? metadata?.codeVersion : 'v1.0'), (metadata?.codeStatus ? metadata?.codeStatus : ''));
         this.c2eMetadata.setC2eMdGeneralLd(c2eMdGeneralLd);
         this.c2eMetadata.setC2eMdSubjectOfLd(c2eMdSubjectOfLd);

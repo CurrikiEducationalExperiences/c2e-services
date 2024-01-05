@@ -18,6 +18,8 @@ export class CeeEpubWriter {
   private licenseExpires: string = '';
   private keywords: string[] = [];
   private breadcrumb: string[] = [];
+  private copyrightNotice: string = '';
+  private copyrightFooter: string = '';
 
   constructor(
     private c2eMediaFile: string,
@@ -31,6 +33,22 @@ export class CeeEpubWriter {
     private c2eMediaIdentifierType: string = '',
     private c2eStatus: string = 'published'
   ) { }
+
+  setCopyrightNotice(copyrightNotice: string) {
+    this.copyrightNotice = copyrightNotice;
+  }
+
+  getCopyRightNotice(): string {
+    return this.copyrightNotice;
+  }
+
+  setCopyRightFooter(copyRightFooter: string) {
+    this.copyrightFooter = copyRightFooter;
+  }
+
+  getCopyRightFooter(): string {
+    return this.copyrightFooter;
+  }
 
   setBreadcrumb(breadcrumb: string[]): void {
     this.breadcrumb = breadcrumb;
@@ -170,7 +188,8 @@ export class CeeEpubWriter {
         email: this.copyrightHolder.email,
         url: this.copyrightHolder.url
       },
-      copyrightNote: 'This C2E has all rights to ' + this.copyrightHolder.name,
+      copyrightNote: this.copyrightNotice,
+      copyrightFooter: this.copyrightFooter,
       copyrightYear: '2023',
       codeVersion: 'v1.0',
       codeStatus: 'Beta'

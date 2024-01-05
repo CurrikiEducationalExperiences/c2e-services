@@ -72,6 +72,8 @@ export const listCeeByMedia = async (
   const identifierValue = (ceeListRequest?.identifier?.identifierValue ? ceeListRequest.identifier.identifierValue : '');
   const identifierType = (ceeListRequest?.identifier?.identifierType ? ceeListRequest.identifier.identifierType : '');
   const price = (ceeListRequest?.price ? ceeListRequest.price : 0);
+  const copyrightFooter = `From ${(ceeRootMedia?.title ? ceeRootMedia?.title : ceeMediaParentRecord?.title)}, <a href="#" id="copyrightNotice">Copyright Notice</a>. Used by permission of John Wiley & Sons, Inc.`;
+  const copyrightNotice = `Copyright (c) 2024, John Wiley & Sons`;
 
   // making master cee
   const ceeMasterWriter = new CeeWriter(
@@ -99,6 +101,8 @@ export const listCeeByMedia = async (
   ceeMasterWriter.setLicenseIdentifier('c2e-lsc-master');
   ceeMasterWriter.setLicenseDateCreated(new Date().toISOString());
   ceeMasterWriter.setLicenseExpires(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
+  ceeMasterWriter.setCopyrightNotice(copyrightNotice);
+  ceeMasterWriter.setCopyRightFooter(copyrightFooter);
   ceeMasterWriter.write();
   await ceeRepository.updateById(ceeMasterRecord.id, {title, description, manifest: ceeMasterWriter.getC2eManifest(), type: 'master'});
   await ceeMediaCeeRepository.create({ceeId: ceeMasterRecord.id, ceeMediaId: ceeMediaRecord.id});
@@ -129,6 +133,8 @@ export const listCeeByMedia = async (
   ceePreviewWriter.setLicenseIdentifier('c2e-lsc-preview');
   ceePreviewWriter.setLicenseDateCreated(new Date().toISOString());
   ceePreviewWriter.setLicenseExpires(new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
+  ceePreviewWriter.setCopyrightNotice(copyrightNotice);
+  ceePreviewWriter.setCopyRightFooter(copyrightFooter);
   let ceePreviewFileStream: ReadStream | Boolean = ceePreviewWriter.write();
   await ceeRepository.updateById(ceePreviewRecord.id, {title, description, manifest: ceePreviewWriter.getC2eManifest(), type: 'preview'});
   await protectCee(ceePreviewFileStream, ceePreviewRecord);

@@ -8,13 +8,15 @@ export default class C2eMdCopyrightLd extends JsonLinkedData implements C2eMdCop
     copyrightHolder: C2ePersona;
     copyrightNotice: string;
     copyrightYear: string;
+    copyrightFooter: string;
 
-    constructor (c2eId: string, type: string, license: C2eDigitalDocument, copyrightHolder: C2ePersona, copyrightNotice: string, copyrightYear: string) {
+    constructor(c2eId: string, type: string, license: C2eDigitalDocument, copyrightHolder: C2ePersona, copyrightNotice: string, copyrightFooter: string, copyrightYear: string) {
         const identifier = 'c2ens:c2eid-' + c2eId + '/metadata/copyright';
         super(identifier, type);
         this.license = license;
         this.copyrightHolder = copyrightHolder;
         this.copyrightNotice = copyrightNotice;
+        this.copyrightFooter = copyrightFooter;
         this.copyrightYear = copyrightYear;
     }
 
@@ -42,6 +44,14 @@ export default class C2eMdCopyrightLd extends JsonLinkedData implements C2eMdCop
         return this.copyrightNotice;
     }
 
+    setCopyrightFooter(copyRightFooter: string): void {
+        this.copyrightFooter = copyRightFooter;
+    }
+
+    getCopyrightFooter(): string | undefined {
+        return this.copyrightFooter;
+    }
+
     setCopyrightYear(copyrightYear: string): void {
         this.copyrightYear = copyrightYear;
     }
@@ -57,6 +67,7 @@ export default class C2eMdCopyrightLd extends JsonLinkedData implements C2eMdCop
             license: this.getC2eLicense()?.toJsonLd(),
             copyrightHolder: this.getCopyrightHolder()?.toJsonLd(),
             copyrightNotice: this.getCopyrightNotic(),
+            copyrightFooter: this.getCopyrightFooter(),
             copyrightYear: this.getCopyrightYear()
         };
     }

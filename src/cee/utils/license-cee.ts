@@ -36,6 +36,8 @@ export const licenseCee = async (
   const manifest = ceeMasterRecord ? Object.assign(ceeMasterRecord.manifest ? ceeMasterRecord.manifest : {}) : {};
   const license = manifest.c2eMetadata?.copyright?.license;
   const copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
+  const copyrightNotice = manifest.c2eMetadata?.copyright?.copyrightNotice;
+  const copyrightFooter = manifest.c2eMetadata?.copyright?.copyrightFooter;
   const publisher = manifest.c2eMetadata?.publisher;
   const subjectOf = manifest.c2eMetadata?.subjectOf?.name;
   const keywords = manifest.c2eMetadata?.general?.keywords.length > 0 ? manifest.c2eMetadata?.general?.keywords : ["Education", "Curriculum", "Curriki", "EPUB"];
@@ -114,6 +116,8 @@ export const licenseCee = async (
     ceeLicensedWriter.setLicenseIdentifier(licenseKey);
     ceeLicensedWriter.setLicenseDateCreated(licenseDate);
     ceeLicensedWriter.setLicenseExpires(licenseEndDate);
+    ceeLicensedWriter.setCopyRightFooter(copyrightFooter);
+    ceeLicensedWriter.setCopyrightNotice(copyrightNotice);
     ceeLicensedWriter.write();
     await ceeRepository.updateById(ceeLicensedRecord.id, {manifest: ceeLicensedWriter.getC2eManifest()});
     await ceeMediaCeeRepository.create({ceeId: ceeLicensedRecord.id, ceeMediaId: ceeMediaRecord.id});

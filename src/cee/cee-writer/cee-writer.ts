@@ -14,6 +14,8 @@ export class CeeWriter {
   private licenseExpires: string = '';
   private keywords: string[] = [];
   private breadcrumb: string[] = [];
+  private copyrightNotice: string = '';
+  private copyrightFooter: string = '';
 
   constructor(
     private cee: Cee,
@@ -27,6 +29,22 @@ export class CeeWriter {
     private c2eMediaIdentifierType: string = '',
     private c2eStatus: string = 'published'
   ) { }
+
+  setCopyrightNotice(copyrightNotice: string) {
+    this.copyrightNotice = copyrightNotice;
+  }
+
+  getCopyRightNotice(): string {
+    return this.copyrightNotice;
+  }
+
+  setCopyRightFooter(copyRightFooter: string) {
+    this.copyrightFooter = copyRightFooter;
+  }
+
+  getCopyRightFooter(): string {
+    return this.copyrightFooter;
+  }
 
   setBreadcrumb(breadcrumb: string[]): void {
     this.breadcrumb = breadcrumb;
@@ -107,6 +125,8 @@ export class CeeWriter {
       ceeEpubWriter.setLicenseIdentifier(this.licenseIdentifier);
       ceeEpubWriter.setLicenseDateCreated(this.licenseDateCreated);
       ceeEpubWriter.setLicenseExpires(this.licenseExpires);
+      ceeEpubWriter.setCopyrightNotice(this.getCopyRightNotice());
+      ceeEpubWriter.setCopyRightFooter(this.getCopyRightFooter());
 
       let fileReadStream = ceeEpubWriter.write();
       this.setC2eManifest(ceeEpubWriter.getC2eManifest());
