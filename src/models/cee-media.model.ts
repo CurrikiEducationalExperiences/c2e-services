@@ -80,6 +80,11 @@ export class CeeMedia extends Entity {
   })
   collection?: string;
 
+  @property({
+    type: 'string'
+  })
+  metadata?: string;
+
   constructor(data?: Partial<CeeMedia>) {
     super(data);
   }

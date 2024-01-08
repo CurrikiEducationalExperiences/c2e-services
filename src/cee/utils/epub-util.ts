@@ -40,6 +40,8 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
   const zip = new AdmZip(file);
   const tempBookPath = path.join(TEMP_FOLDER, `/${tempId}/tempbook`);
   zip.extractAllTo(tempBookPath, true);
+  // Extracting metadata
+  const metadata = getEpubMetadata(tempBookPath);
   // Read through the spine in content.opf
   const tocFolder = getTocDirectory(tempBookPath);
   const contentFileData = fs.readFileSync(`${tempBookPath}/${tocFolder}/content.opf`, 'utf-8');
@@ -171,7 +173,8 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       parentId: hierarchyParentId,
       identifierType: 'ISBN',
       identifier: isbn,
-      collection: hierarchyParentLabel
+      collection: hierarchyParentLabel,
+      metadata: metadata
     });
     const epubFile = idref + '-' + ceeMediaRecord.id + '.epub';
     zip2.writeZip(path.join(STORAGE_FOLDER, `/${epubFile}`));
@@ -346,4 +349,68 @@ function removeHtmlTags(xhtmlString: string) {
   return $('*').contents().filter((i: number, element: any) => {
     return element.nodeType === 3;
   }).text();
+}
+
+const getEpubMetadata = (epubPath: string): any => {
+  const tocPath = getTocPath(epubPath);
+  const opfMetadata = getOpfMetadata(tocPath);
+  const copyrightHtml = findCopyrightFile(epubPath);
+  return {
+    ... opfMetadata,
+    copyright: copyrightHtml
+  }
+}
+
+const getTocPath = (basePath: string) : string => {
+  const xml = fs.readFileSync(`${basePath}/META-INF/container.xml`);
+  const $ = cheerio.load(xml, { xmlMode: true, normalizeWhitespace: true });
+  const fullPath = $('rootfile[full-path]').attr('full-path');
+  return path.join(basePath, fullPath);
+};
+
+const getOpfMetadata = (path: string): any => {
+  let metadata = {};
+  const attributes = [
+    {name: 'title', selector: 'dc\\:title'},
+    {name: 'creator', selector: 'dc\\:creator'},
+    {name: 'publisher', selector: 'dc\\:publisher'},
+    {name: 'date', selector: 'dc\\:date'},
+    {name: 'language', selector: 'dc\\:language'},
+    {name: 'identifier', selector: 'dc\\:identifier'},
+  ];
+  const xml = fs.readFileSync(path);
+  const $ = cheerio.load(xml, { xmlMode: true});
+  for (const attr of attributes) {
+    const data: Record<string, string> = {}
+    data[attr.name] = $(attr.selector).map((i: any, el:any) => $(el).text()).get().join(' ');
+    metadata = {
+      ...metadata,
+      ...data
+    };
+  }
+  return metadata
+};
+
+const findCopyrightFile = (dirPath:string):string | false => {
+  const files = fs.readdirSync(dirPath);
+  for (const file of files) {
+    if (file.indexOf('.css') !== -1) continue;
+
+    const filePath = path.join(dirPath, file);
+    if (fs.statSync(filePath).isDirectory()) {
+      const foundPath = findCopyrightFile(filePath);
+      if (foundPath !== false) {
+        return foundPath;
+      }
+      continue;
+    } else {
+      const content = fs.readFileSync(filePath);
+      if (content.toString().toLowerCase().includes('copyright-text')) {
+        const $ = cheerio.load(content.toString(), { xmlMode: true, normalizeWhitespace: true });
+        const text = $(`[class^="copyright"]`).toString();
+        return text.length > 0 ? text : $(`[class^="Copyright"]`).toString();
+      }
+    }
+  }
+  return false;
 }
