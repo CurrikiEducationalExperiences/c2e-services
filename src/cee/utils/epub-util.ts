@@ -174,7 +174,7 @@ export const epubSplitter = async (epub: string, ceeMediaRepository: CeeMediaRep
       identifierType: 'ISBN',
       identifier: isbn,
       collection: hierarchyParentLabel,
-      metadata: metadata
+      metadata: JSON.stringify(metadata)
     });
     const epubFile = idref + '-' + ceeMediaRecord.id + '.epub';
     zip2.writeZip(path.join(STORAGE_FOLDER, `/${epubFile}`));
