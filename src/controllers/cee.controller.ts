@@ -85,6 +85,8 @@ export class CeeController {
     const manifest = Object.assign(ceeRecord.manifest ? ceeRecord.manifest : {});
     const license = manifest.c2eMetadata?.copyright?.license;
     const copyrightHolder = manifest.c2eMetadata?.copyright?.copyrightHolder;
+    const copyrightNotice = manifest.c2eMetadata?.copyright?.copyrightNotice;
+    const copyrightFooter = manifest.c2eMetadata?.copyright?.copyrightFooter;
     const publisher = manifest.c2eMetadata?.publisher;
 
     const licenseType = license?.additionalType ? license.additionalType : '';
@@ -127,6 +129,8 @@ export class CeeController {
       ceeLicensedWriter.setLicenseIdentifier(licenseKey);
       ceeLicensedWriter.setLicenseDateCreated(licenseDate);
       ceeLicensedWriter.setLicenseExpires(licenseEndDate);
+      ceeLicensedWriter.setCopyRightFooter(copyrightFooter);
+      ceeLicensedWriter.setCopyrightNotice(copyrightNotice);
       const ceeFileStream: ReadStream | Boolean = ceeLicensedWriter.write();
       if (ceeFileStream instanceof ReadStream && ceeLicenseRecord) {
         const filePath = `${TEMP_FOLDER}/${crypto.randomUUID()}`;
