@@ -78,11 +78,20 @@ export class CeeScriptController {
         //console.log('metadataObj', metadataObj);
         const copyrightNotice = metadataObj.copyright;
         const copyrightFooter = `From ${metadataObj.title}, <a href="#" id="copyrightNotice">Copyright Notice</a>. Used by permission of John Wiley & Sons, Inc.`;
+        const copyrightHolder = {
+          ...manifestObj.c2eMetadata.copyright.copyrightHolder,
+          name: '',
+          email: '',
+          url: '',
+          '@id': manifestObj['@id'] + '/copyrightHolder/id/'
+        }
 
         const copyright = {
           ...manifestObj.c2eMetadata.copyright,
           copyrightNotice,
-          copyrightFooter
+          copyrightFooter,
+          copyrightYear: '',
+          copyrightHolder
         };
         manifestObj.c2eMetadata.copyright = copyright;
 
@@ -114,7 +123,9 @@ export class CeeScriptController {
             const ceePreviewCopyright = {
               ...ceePreviewManifestObj.c2eMetadata.copyright,
               copyrightNotice,
-              copyrightFooter
+              copyrightFooter,
+              copyrightYear: '',
+              copyrightHolder
             };
             ceePreviewManifestObj.c2eMetadata.copyright = ceePreviewCopyright;
 
